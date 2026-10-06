@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Security Control Center</title>
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand"><span class="brand-mark">S</span><span>Security<br><b>Control Center</b></span></div>
+    <nav><a class="active" href="#overview">Overview</a><a href="#findings">Findings</a><a href="#report">Report</a></nav>
+    <div class="sidebar-foot">OWASP Top 10<br><small>Automated repository review</small></div>
+  </aside>
+  <main class="main">
+    <header><div><p class="eyebrow">APPLICATION SECURITY</p><h1>Repository overview</h1></div><span class="system-status"><i></i> System ready</span></header>
+    <section class="scan-card">
+      <div><p class="eyebrow">NEW SECURITY SCAN</p><h2>Analyze a GitHub repository</h2><p class="muted">Run a static analysis and review prioritized findings in one place.</p></div>
+      <form id="scan-form"><label for="repo-url">Repository URL</label><div class="input-row"><input id="repo-url" type="url" placeholder="https://github.com/organization/repository" required><button type="submit">Start analysis <span>→</span></button></div><p id="form-error" class="error" role="alert"></p></form>
+    </section>
+    <section id="progress-panel" class="progress-card hidden" aria-live="polite"><div class="progress-heading"><strong id="progress-message">Preparing analysis</strong><span id="progress-status" class="status status-queued">queued</span><span id="progress-value">0%</span></div><div class="progress-track"><div id="progress-bar"></div></div><small id="progress-stage">Queued</small><p id="technical-error" class="technical-error hidden" role="alert"></p></section>
+    <section id="history" class="panel history-panel"><div class="panel-heading"><div><p class="eyebrow">ANALYSIS HISTORY</p><h2>Recent repository analyses</h2></div><button id="refresh-history" class="secondary" type="button">Refresh</button></div><div class="history-list" id="history-list"><p class="empty">Loading analysis history…</p></div></section>
+    <section id="overview" class="summary-grid">
+      <div class="metric"><span>Total findings</span><strong id="total-count">—</strong><small>Across the repository</small></div>
+      <div class="metric critical"><span>Critical</span><strong id="critical-count">—</strong><small>Immediate attention</small></div>
+      <div class="metric high"><span>High</span><strong id="high-count">—</strong><small>Priority remediation</small></div>
+      <div class="metric medium"><span>Medium</span><strong id="medium-count">—</strong><small>Planned remediation</small></div>
+      <div class="metric low"><span>Low</span><strong id="low-count">—</strong><small>Best practice</small></div>
+    </section>
+    <section id="findings" class="panel"><div class="panel-heading"><div><p class="eyebrow">SECURITY FINDINGS</p><h2>Prioritized findings</h2></div><div class="filters"><select id="severity-filter"><option value="">All severities</option><option value="critical">Critical</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select><select id="owasp-filter"><option value="">All OWASP categories</option></select><select id="cwe-filter"><option value="">All CWE</option></select><select id="status-filter"><option value="">All statuses</option><option value="open">Open</option><option value="resolved">Resolved</option><option value="false_positive">False positive</option></select><input id="file-filter" type="search" placeholder="Filter by file"></div></div><div class="table-wrap"><table><thead><tr><th>Severity</th><th>Finding</th><th>Rule</th><th>Location</th><th>Status</th></tr></thead><tbody id="findings-body"><tr><td colspan="5" class="empty">Start an analysis to see findings.</td></tr></tbody></table></div><div id="finding-detail" class="finding-detail hidden"></div></section>
+    <section id="report" class="panel report-panel"><div class="panel-heading"><div><p class="eyebrow">DELIVERABLE</p><h2>Security report</h2></div><div class="report-actions"><button id="download-json" class="secondary" disabled>Download JSON</button><button id="download-report" class="secondary" disabled>Download Markdown</button></div></div><pre id="report-content">Your generated report will appear here.</pre></section>
+  </main>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
