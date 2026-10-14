@@ -1,341 +1,212 @@
-# Security Control Center
+# 🛡️ Security Control Center & Benchmark Suite
 
-## ¿De qué trata?
+> **Plataforma de Análisis de Seguridad SAST y Evaluación Continua de Precisión (Benchmark)**  
+> Desarrollado para el proyecto: *Seguridad de aplicaciones asistida por IA* en **Neurotry (Bioprevento Fundadores)**.
 
-Security Control Center es un prototipo de análisis de seguridad para repositorios públicos de GitHub. La aplicación permite ingresar la URL de un repositorio y consultar, desde una interfaz web, los hallazgos detectados mediante análisis estático.
+---
 
-El objetivo de la demo es apoyar un proceso de seguridad basado en OWASP Top 10, mostrando los riesgos de forma clara para facilitar su clasificación, priorización, documentación y remediación.
+## 📌 Visión General
 
-La solución está pensada como una herramienta de apoyo. Los resultados deben ser revisados por una persona con conocimiento de seguridad antes de tomar decisiones definitivas.
+**Security Control Center** es una plataforma integral de ciberseguridad diseñada para analizar repositorios de código, identificar vulnerabilidades basadas en el **OWASP Top 10** y secretos expuestos, y evaluar cuantitativamente la precisión del motor de análisis mediante una suite de **Benchmarking continuo**.
 
-## Funcionalidades
+La plataforma combina:
+1. **Motor SAST y Secret Scanning:** Integración de reglas estáticas Semgrep y escaneo de credenciales con Gitleaks.
+2. **Dashboard Cyber-Moderno (UI/UX):** Interfaz rediseñada en paleta Obsidian & Electric Cyan con visualización en tiempo real de hallazgos, contexto de código, severidades y filtros.
+3. **Módulo de Benchmarking y Regresión:** Medición objetiva de **Recall (True Positive Rate - TPR)** y **False Positive Rate (FPR)** frente a *Ground Truth* de referencia, desglose por categoría CWE y comparativa en puntos respecto a la corrida anterior y al `baseline.json`.
 
-- Validación de URLs públicas de GitHub.
-- Clonación temporal del repositorio.
-- Análisis SAST mediante Semgrep y las reglas `p/owasp-top-ten`.
-- Detección de secretos y credenciales expuestas mediante Gitleaks.
-- Clasificación por severidad:
-  - Critical
-  - High
-  - Medium
-  - Low
-- Normalización y deduplicación de hallazgos.
-- Información de OWASP, CWE, regla, archivo y línea afectada.
-- Contexto acotado del código alrededor del hallazgo.
-- Explicación del problema y recomendación de solución.
-- Estados de ejecución:
-  - Queued
-  - Running
-  - Completed
-  - Failed
-- Barra de progreso del análisis.
-- Historial de análisis anteriores.
-- Reanálisis de un repositorio desde el historial.
-- Filtros por severidad, archivo, OWASP, CWE y estado.
-- Descarga del reporte en Markdown y JSON.
-- Interfaz visual de tipo dashboard de seguridad, sin apariencia de chatbot.
-- Enriquecimiento opcional con Gemini.
+---
 
-## Arquitectura
+## 🚀 Nuevas Características y Mejoras Implementadas
 
-```text
-Usuario
-  |
-  v
-Dashboard HTML/CSS/JavaScript
-  |
-  | POST /api/analyze
-  v
-API Flask
-  |
-  v
-Analizador Python
-  |
-  +-- git clone temporal
-  +-- Semgrep OWASP Top 10
-  +-- Gitleaks (secret scanning)
-  +-- Normalización y deduplicación
-  +-- Enriquecimiento opcional con Gemini
-  +-- Generación del reporte
-  |
-  v
-storage/analyses/{analysis_id}.json
-```
+### 1. Pestaña de Benchmark en el Dashboard
+- **Tarjetas por repositorio de referencia:** Cada dataset (`Tiny Vulnerable App`, `OWASP Web Benchmark`, `OWASP Juice Shop Sample`, `API & Authentication Benchmark`) cuenta con su tarjeta indicando Recall (TPR), FPR, desglose de TP/FP/FN y comparativa en puntos.
+- **Tabla de Precisión por Categoría CWE:** Desglose detallado de vulnerabilidades (CWE-78 Command Injection, CWE-89 SQLi, CWE-798 Hardcoded Secrets, CWE-327 Broken Crypto, CWE-502 Deserialization, CWE-22 Path Traversal, CWE-94 Code Injection, etc.) comparando Ground Truth vs Detecciones y delta en puntos frente a la corrida previa.
+- **Comparativa en Puntos (Δ deltas):** Seguimiento cuantitativo de mejoras o regresiones en puntos porcentuales (ej. `▲ +5.0 pts` en Recall o `▼ -2.5 pts` en FPR).
+- **Manejo de Estados Integrado:**
+  - **Cargando (Loading):** Animación de radar y barra porcentual en tiempo real mientras el motor analiza las referencias.
+  - **Vacío (Empty State):** Pantalla guiada para ejecutar la primera corrida cuando no existen datos previos.
+  - **Error (Error State):** Alerta estilizada con descripción del fallo y botón de reintento.
 
-## Requisitos
+### 2. Endpoints de Benchmark en la API
+- **`GET /api/bench`:** Devuelve el estado del motor (`idle`, `running`, `completed`, `error`), progreso, última corrida (`latest_run`), baseline activo, resumen global y lista histórica.
+- **`POST /api/bench/run`:**
+  - Reutiliza el motor de análisis (`analyzer.analyze_directory`).
+  - **Concurrencia única garantizada:** Bloqueo por mutex que retorna `409 Conflict` si ya hay una corrida en curso.
+  - Salida JSON estable con métricas normalizadas, desglose por CWE y deltas calculados.
+  - Marcado automático de cada corrida con timestamp ISO, fecha legible y la **feature recién integrada** (detectada desde git o suministrada en el body `{"feature": "..."}`).
+  - Generación y almacenamiento automático de `baseline.json` en la primera corrida o cuando se marque `{"save_as_baseline": true}`.
+- **`GET /api/bench/baseline`:** Consulta directa del reporte de baseline guardado.
+- **`GET /api/bench/history`:** Listado de corridas históricas.
+- **`GET /api/bench/run/<run_id>`:** Consulta detallada de una corrida específica por ID.
 
-- Windows PowerShell.
-- Python 3.10 o superior recomendado.
-- Git disponible en el `PATH`.
-- Semgrep instalado.
-- Gitleaks instalado y disponible en el `PATH` (opcional; si no está disponible se informa en `analysis.tools`).
-- Dependencias de Python del archivo `requirements.txt`.
-- Una clave `GEMINI_API_KEY` solamente si se desea activar el enriquecimiento con Gemini.
+### 3. Rediseño Total de UI/UX
+- Paleta oscura profesional: Fondos `#080c14` y `#0f1627`, tarjetas elevadas `#131d31`, acentos en cian neón (`#00f0ff`), esmeralda (`#10b981`), ámbar y carmesí.
+- Navegación lateral limpia por pestañas: **Overview**, **Hallazgos**, **Benchmark** y **Reporte**.
+- Tipografía moderna con soporte monoespaciado (`JetBrains Mono` y `Outfit`).
 
-## Instalación en Windows
+---
 
-Abre PowerShell y entra en la carpeta del proyecto:
-
-```powershell
-cd C:\Users\Esparrago\Downloads\demo
-```
-
-Activa el entorno virtual:
-
-```powershell
-.\venv\Scripts\Activate.ps1
-```
-
-Si PowerShell bloquea la ejecución de scripts, permite la ejecución únicamente para la sesión actual:
-
-```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\venv\Scripts\Activate.ps1
-```
-
-Instala las dependencias:
-
-```powershell
-python -m pip install -r requirements.txt
-```
-
-Comprueba las herramientas principales:
-
-```powershell
-python --version
-git --version
-semgrep --version
-gitleaks version
-```
-
-## Ejecución de la aplicación web
-
-Desde la carpeta del proyecto y con el entorno virtual activado:
-
-```powershell
-python api_server.py
-```
-
-Abre el navegador en:
+## 🏗️ Arquitectura del Sistema
 
 ```text
-http://127.0.0.1:5000
+                                  +---------------------------------------+
+                                  |      Dashboard Web (SPA Moderna)      |
+                                  |   Overview | Hallazgos | Benchmark    |
+                                  +-------------------+-------------------+
+                                                      |
+                                                      | HTTP REST
+                                                      v
+                                  +---------------------------------------+
+                                  |        Servidor Flask (API)           |
+                                  |  /api/analyze  |  /api/bench(/run)    |
+                                  +---------+-------------------+---------+
+                                            |                   |
+                     Escaneo de Repositorio |                   | Ejecución de Benchmark
+                                            v                   v
++-------------------------------------------+---+   +-----------+-------------------------------+
+|             analyzer.py                       |   |         benchmark_service.py              |
+|  - git clone temporal                         |   |  - Carga refs.yml y datasets locales      |
+|  - Semgrep SAST (reglas locales + OWASP)      |   |  - Reutiliza analyzer.analyze_directory   |
+|  - Gitleaks (detección de credenciales)       |   |  - Matcher contra Ground Truth (TP/FP/FN) |
+|  - Deduplicación & clasificación severidad    |   |  - Métricas Recall/TPR, FPR, F1, CWE map  |
+|  - Enriquecimiento opcional con IA (Gemini)   |   |  - Cálculo de deltas vs anterior/baseline |
++-----------------------------------------------+   +-------------------------------------------+
+                        |                                                 |
+                        v                                                 v
+         storage/analyses/{id}.json                       storage/benchmark/
+                                                          ├── baseline.json
+                                                          ├── latest.json
+                                                          ├── history.json
+                                                          └── runs/{run_id}.json
 ```
 
-Para detener el servidor:
+---
 
-```text
-Ctrl + C
+## ⚙️ Estructura del Proyecto
+
 ```
-
-## Ejecución con enriquecimiento de Gemini
-
-La integración con Gemini es opcional. Sin una clave, el análisis funciona utilizando los resultados de Semgrep.
-
-En PowerShell, configura la variable únicamente para la sesión actual:
-
-```powershell
-$env:GEMINI_API_KEY = "tu_clave_de_gemini"
-python api_server.py
-```
-
-También se pueden configurar opcionalmente el modelo y el endpoint:
-
-```powershell
-$env:GEMINI_MODEL = "gemini-1.5-flash"
-$env:GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-```
-
-La aplicación aplica controles antes de enviar información al modelo:
-
-- No envía el código fuente ni el contexto completo del hallazgo.
-- Envía únicamente metadatos mínimos del hallazgo.
-- Redacta posibles tokens, claves API, contraseñas y claves privadas.
-- Exige una respuesta JSON con un esquema definido.
-- Valida IDs, tipos y severidades.
-- Conserva el resultado de Semgrep si Gemini falla o devuelve una respuesta inválida.
-- Registra el origen de los campos mediante `sources`.
-- Envía un payload versionado con resumen, detector, ubicación, OWASP, CWE y referencias acotadas.
-- Nunca envía el valor detectado por Gitleaks (`Secret`/`Match`).
-
-No guardes claves reales en el código fuente ni las subas al repositorio.
-
-## Uso de la interfaz
-
-1. Abre `http://127.0.0.1:5000`.
-2. Introduce una URL pública de GitHub, por ejemplo:
-
-   ```text
-   https://github.com/juice-shop/juice-shop
-   ```
-
-3. Presiona **Start analysis**.
-4. Observa el estado y progreso del análisis.
-5. Revisa el resumen por severidad.
-6. Filtra los hallazgos por severidad, archivo, OWASP, CWE o estado.
-7. Haz clic en un hallazgo para consultar su detalle y contexto de código.
-8. Descarga el resultado como JSON o Markdown.
-
-El repositorio debe ser público y utilizar una URL con este formato:
-
-```text
-https://github.com/organizacion/repositorio
-https://github.com/organizacion/repositorio.git
-```
-
-## Uso de la API
-
-### Iniciar un análisis
-
-PowerShell:
-
-```powershell
-$body = @{
-  url = "https://github.com/juice-shop/juice-shop"
-} | ConvertTo-Json
-
-Invoke-RestMethod `
-  -Method Post `
-  -Uri http://127.0.0.1:5000/api/analyze `
-  -ContentType "application/json" `
-  -Body $body
-```
-
-Respuesta esperada:
-
-```json
-{
-  "analysis_id": "uuid",
-  "status": "processing",
-  "stage": "queued",
-  "progress": 0,
-  "message": "Analysis queued"
-}
-```
-
-### Consultar un análisis
-
-Reemplaza `ID_DEL_ANALISIS` por el valor recibido:
-
-```powershell
-Invoke-RestMethod `
-  -Uri http://127.0.0.1:5000/api/analysis/ID_DEL_ANALISIS
-```
-
-El resultado incluye:
-
-- Estado.
-- Repositorio.
-- Resumen por severidad.
-- Hallazgos normalizados.
-- Evidencia y contexto de código.
-- Origen de los campos.
-- Reporte Markdown.
-
-### Consultar el historial
-
-```powershell
-Invoke-RestMethod `
-  -Uri http://127.0.0.1:5000/api/analyses
-```
-
-## Formato de un hallazgo
-
-```json
-{
-  "id": 1,
-  "rule": "python.lang.security.audit.eval-detected",
-  "owasp": "A03:2021 - Injection",
-  "cwe": ["CWE-95"],
-  "references": [],
-  "severity": "high",
-  "file": "src/example.py",
-  "line": 42,
-  "title": "Uso inseguro de eval",
-  "problem": "La entrada puede ejecutarse como código.",
-  "solution": "Reemplazar eval por un parser seguro.",
-  "false_positive": false,
-  "status": "open",
-  "code_context": [
-    {
-      "line": 40,
-      "text": "..."
-    }
-  ],
-  "sources": {
-    "severity": "semgrep",
-    "problem": "gemini"
-  }
-}
-```
-
-## Ejecución desde línea de comandos
-
-También se puede ejecutar el analizador sin iniciar la interfaz:
-
-```powershell
-python analyzer.py --url "https://github.com/juice-shop/juice-shop"
-```
-
-Al finalizar, se generan:
-
-- `reporte_seguridad.json`
-- `reporte_seguridad.md`
-
-## Estructura principal
-
-```text
-demo/
-├── analyzer.py                 # Motor de análisis SAST y enriquecimiento opcional
-├── api_server.py               # API Flask y ejecución asíncrona
-├── requirements.txt            # Dependencias Python
+demo-seguridad/
+├── analyzer.py               # Motor principal de análisis SAST, Semgrep y Gitleaks
+├── api_server.py             # API Flask con endpoints de análisis y benchmark
+├── benchmark_service.py      # Servicio de benchmark, matching de ground truth y métricas
+├── requirements.txt          # Dependencias de Python (Flask, Semgrep, PyYAML, etc.)
+├── reporte_seguridad.md      # Reporte auditable de referencia
+├── rules/
+│   └── security-rules.yml    # Reglas SAST personalizadas (CWE-78, 89, 94, 327, 798, etc.)
+├── bench/
+│   ├── refs.yml              # Configuración de repositorios de referencia para benchmark
+│   ├── benchmark.py          # CLI de benchmark (clona, analiza, compara y persiste)
+│   ├── test_tiny.py          # Corrida de ejemplo pequeño (smoke test)
+│   ├── results/              # Resultados serializados de benchmark
+│   └── examples/             # Datasets de referencia con ground truth
+│       ├── juice-shop-sample/      # vulnerabilidades.json (vuln_code_snippet + vuln_line)
+│       ├── benchmark-python/       # expectedresults-0.1.csv (caso + CWE)
+│       ├── tiny-vuln-app/
+│       ├── owasp-web-bench/
+│       └── api-auth-bench/
+├── tests/
+│   └── test_benchmark.py     # Suite unittest del benchmark (ejemplo pequeño autónomo)
 ├── static/
-│   ├── index.html              # Interfaz principal
-│   ├── css/styles.css          # Estilos del dashboard
-│   └── js/app.js               # Lógica del cliente
-├── storage/
-│   └── analyses/               # Resultados persistidos en JSON
-├── reporte_seguridad.md        # Reporte CLI generado
-└── reporte_seguridad.json      # Resultado CLI generado
+│   ├── index.html            # Dashboard web con pestañas Overview, Hallazgos y Benchmark
+│   ├── css/styles.css        # Estilos cyber-modernos (Obsidian & Cyan)
+│   └── js/app.js             # Lógica cliente, navegación de tabs y polling
+└── storage/
+    ├── analyses/             # Historial de análisis de repositorios externos
+    └── benchmark/            # Almacenamiento de baseline.json, latest.json y corridas
 ```
 
-## Validaciones realizadas
+---
 
-Las validaciones básicas del proyecto pueden ejecutarse con:
+## 💻 Instalación y Puesta en Marcha
 
-```powershell
-python -m py_compile analyzer.py api_server.py
-node --check .\static\js\app.js
+### Requisitos Previos
+- Python 3.10 o superior.
+- Git en el `PATH`.
+- Semgrep instalado (`pip install semgrep`).
+- Gitleaks (opcional para secret scanning local).
+
+### 1. Clonar y configurar entorno virtual
+
+```bash
+# En Linux / macOS:
+python3 -m venv .venv
+source .venv/bin/activate
+
+# En Windows (PowerShell):
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 ```
 
-También se validan:
+### 2. Instalar dependencias
 
-- URLs inválidas.
-- Respuesta de la página principal.
-- Ciclo de vida asíncrono de un análisis.
-- Redacción de secretos antes de enviar datos a Gemini.
-- Validación del esquema de respuesta de Gemini.
-- Deduplicación y contexto de código.
-- Integración opcional de Gitleaks y estado individual de cada herramienta.
+```bash
+pip install -r requirements.txt
+```
 
-## Limitaciones actuales
+### 3. Ejecutar la aplicación
 
-- El análisis combina SAST con Semgrep y secret scanning con Gitleaks cuando el binario está disponible.
-- Solo se aceptan repositorios públicos de GitHub.
-- Todavía no incluye análisis completo de dependencias, contenedores, IaC ni workflows.
-- No sustituye una revisión manual de seguridad.
-- La clasificación automática puede requerir confirmación humana.
-- La persistencia actual utiliza archivos JSON y está orientada a una demo local.
-- No incluye autenticación, rate limiting ni una cola distribuida de trabajos.
+```bash
+python api_server.py
+```
 
-## Próximas mejoras recomendadas
+Abre en tu navegador: **`http://localhost:5000`**
 
-1. Agregar análisis de dependencias con `pip-audit`, `npm audit` o Trivy.
-2. Incorporar reglas Semgrep propias del equipo.
-3. Añadir puntuación de riesgo basada en impacto, probabilidad y exposición.
-4. Implementar comparación entre análisis.
-5. Añadir autenticación y soporte seguro para repositorios privados.
-6. Integrar el análisis en GitHub Actions y Pull Requests.
-7. Validar automáticamente que una remediación elimine el hallazgo.
-8. Migrar el almacenamiento a SQLite o PostgreSQL cuando existan varios usuarios.
+---
 
+## 📡 Referencia de la API
+
+### Endpoints de Análisis SAST
+
+| Método | Ruta | Descripción |
+| :--- | :--- | :--- |
+| `POST` | `/api/analyze` | Inicia análisis asíncrono de un repositorio de GitHub (`{"url": "..."}`). |
+| `GET` | `/api/analysis/<id>` | Consulta progreso y resultados del análisis. |
+| `GET` | `/api/analyses` | Lista los análisis realizados recientemente. |
+
+### Endpoints de Benchmarking
+
+| Método | Ruta | Descripción |
+| :--- | :--- | :--- |
+| `GET` | `/api/bench` | Estado actual, última corrida (`latest_run`), baseline y resumen de repos. |
+| `POST` | `/api/bench/run` | Dispara corrida de benchmark (`{"feature": "...", "save_as_baseline": false}`). Concurrencia única (409 si está ocupado). |
+| `GET` | `/api/bench/baseline` | Obtiene el reporte de referencia fijado como `baseline.json`. |
+| `GET` | `/api/bench/history` | Historial de corridas anteriores. |
+| `GET` | `/api/bench/run/<id>` | Detalle completo de una corrida específica por ID. |
+
+### CLI de Benchmark
+
+La misma suite está disponible como script (clona/copía cada referencia a una carpeta ignorada por git, ejecuta el motor `analyzer.analyze_directory` —el mismo pipeline de `analyzer.analyze_repo`—, compara contra el ground truth y guarda la corrida en `bench/results/` con la versión de Semgrep, las reglas aplicadas y los commits evaluados):
+
+```bash
+python bench/benchmark.py                                    # todas las referencias
+python bench/benchmark.py --repo-ids repo-juice-sample       # solo un subconjunto
+python bench/benchmark.py --save-as-baseline --feature "fx"  # fijar baseline.json
+python bench/test_tiny.py                                    # ejemplo pequeño (smoke test)
+```
+
+### Pruebas
+
+Suite autónoma (unittest, sin dependencias nuevas) con un ejemplo pequeño:
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+---
+
+## 🧪 Métricas Calculadas en el Benchmark
+
+- **True Positives (TP):** Vulnerabilidades reales detectadas correctamente según el Ground Truth.
+- **False Positives (FP):** Hallazgos reportados por el scanner que no corresponden a vulnerabilidades reales en el dataset.
+- **False Negatives (FN):** Vulnerabilidades reales del Ground Truth omitidas por el scanner.
+- **Recall / TPR (True Positive Rate):**
+  $$\text{Recall} = \frac{\text{TP}}{\text{TP} + \text{FN}}$$
+  Porcentaje de vulnerabilidades reales detectadas.
+- **False Positive Rate (FPR):**
+  $$\text{FPR} = \frac{\text{FP}}{\text{TP} + \text{FP}}$$
+  Tasa de falsas alarmas sobre el total de detecciones generadas.
+- **F1-Score:**
+  $$\text{F1} = 2 \cdot \frac{\text{Precision} \cdot \text{Recall}}{\text{Precision} + \text{Recall}}$$
+  Balance armónico entre precisión y cobertura.
+- **Diferencia en Puntos (pts):**
+  $$\Delta = (\text{Métrica}_{\text{actual}} - \text{Métrica}_{\text{anterior}}) \times 100$$
