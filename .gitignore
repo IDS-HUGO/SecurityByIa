@@ -10,6 +10,7 @@ __pycache__/
 .env
 .env.*
 !.env.example
+backend/proxy/tokens.json
 
 # --- Estado en runtime (el código recrea estos archivos al arrancar) ---
 storage/

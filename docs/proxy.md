@@ -10,6 +10,32 @@ Módulos:
 - `backend/proxy/server.py` — el proxy (Flask, puerto 5001 por defecto).
 - `backend/proxy/client.py` — cliente que usan los agentes (`model_request`).
 
+## Arranque mínimo con Docker Compose
+
+F8 requiere dos valores relacionados: el token en claro que usa el backend y el
+hash del mismo token dentro de `PROXY_TOKENS`. Las claves de los proveedores se
+declaran únicamente para el servicio `proxy`.
+
+1. Copiá `.env.example` a `.env` y reemplazá los marcadores. Generá el token y
+  su hash sin guardarlos en el repositorio:
+
+  ```bash
+  python -c "import hashlib,secrets; t='sec-'+secrets.token_urlsafe(24); print('SECURITY_PROXY_TOKEN='+t); print('TOKEN_SHA256='+hashlib.sha256(t.encode()).hexdigest())"
+  ```
+
+2. Usá el token impreso en `SECURITY_PROXY_TOKEN` y su hash en el objeto de
+  `PROXY_TOKENS`. Cargá al menos `GEMINI_API_KEY` si vas a usar triage o
+  enriquecimiento con Gemini.
+
+3. Levantá los servicios:
+
+  ```bash
+  docker compose up --build
+  ```
+
+Sin claves de proveedor, el dashboard y los escaneos sin IA funcionan; las
+llamadas de IA fallan cerradas con respuesta `503`.
+
 ---
 
 ## Cómo funciona
@@ -38,7 +64,7 @@ Reglas de diseño (todas verificables en `backend/tests/test_proxy.py`):
    `_redact_text`, que reemplaza el valor del secreto inyectado y patrones
    genéricos de claves (`AIza…`, `sk-…`, `Bearer …`, `ghp_…`, `api_key=…`).
 4. **Límite de tasa por token**: ventana deslizante de 60 s con
-   `rate_limit_per_minute` por token (default 30). Excedido → 429.
+  `rate_limit_per_minute` por token (recomendado 150 para una corrida grande). Excedido → 429.
 5. **Auditoría sin secretos**: cada intento (permitido o denegado) agrega una
    línea JSONL a `storage/proxy_audit.jsonl` con fecha, servicio, ruta, código
    HTTP, resultado (`allowed` / `denied:<motivo>`), duración y token. **Nunca se
@@ -62,7 +88,7 @@ Los tokens se declaran solo como **hash SHA-256** en `PROXY_TOKENS_FILE`
     "id": "demo-triage",
     "token_sha256": "<sha256-hex>",
     "providers": ["gemini"],
-    "rate_limit_per_minute": 30
+    "rate_limit_per_minute": 150
   }
 ]
 ```

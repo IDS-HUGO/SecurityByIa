@@ -57,7 +57,6 @@ python -m pytest backend/tests/ -v # suite completa de backend, contrato OpenAPI
 
 - `backend/tests/test_cors.py` — pruebas de CORS: orígenes explícitos, ausencia de comodín `*` y credenciales, rechazo de orígenes ajenos.
 - `backend/tests/test_openapi_contract.py` — pruebas de contrato contra `backend/openapi.yaml`.
-- `backend/tests/test_parity.py` — verificación de paridad entre `static/` y `frontend/`.
 - `backend/tests/test_f3_f4.py` — 30 hallazgos etiquetados a mano, severidad contextual y SLA Control 6.
 - `backend/tests/test_benchmark.py` — benchmark: ground truth, matching ±3 líneas, métricas.
 - `backend/tests/test_api.py` y `backend/tests/test_api_queue.py` — endpoints de API y control de concurrencia/rate limit.
@@ -94,14 +93,13 @@ python -m pytest backend/tests/ -v # suite completa de backend, contrato OpenAPI
   - `rules/`, `data/`, `bench/`, `storage/`, `tests/`.
 - `frontend/`: Aplicación SPA moderna con React y Vite.
   - `src/api/client.js`: Capa unificada de acceso a la API con variable de entorno `VITE_API_BASE_URL`.
-  - `src/components/`: Componentes modulares con idéntica apariencia y funcionalidad que `static/`.
+  - `src/components/`: Componentes modulares de la interfaz React.
   - `nginx.conf`: Configuración de producción para Nginx con reverse proxy `/api`.
-- `static/`: Interfaz clásica conservada intacta para verificación de paridad.
-- `PARITY_CHECKLIST.md`: Matriz de verificación de paridad entre `static/` y `frontend/`.
+- `frontend/`: única interfaz web React + Vite; se compila y sirve con Nginx.
 
-### `analyzer.py` — motor de análisis
-
-- `analyze_repo(url, progress_callback, full_history=False)`: clona con git de forma
+       `frontend`: única interfaz web React + Vite; se compila y sirve con Nginx.
+       `backend`: API Flask en el puerto 5000, con CORS restringido por `CORS_ALLOWED_ORIGINS`.
+       `./backend/storage` montado como volumen persistente.
   endurecida — solo URLs https, `--no-tags --single-branch`, `protocol.file.allow=never`,
   `--` antes de la URL, límite de tamaño (`SECURITY_MAX_REPO_MB`, default 200 MB),
   timeout de clon (`SECURITY_CLONE_TIMEOUT`, 300 s) y presupuesto de tiempo total
@@ -109,17 +107,6 @@ python -m pytest backend/tests/ -v # suite completa de backend, contrato OpenAPI
   directorio temporal en `finally`. Registra SHA y rama analizados en
   `result.repository.{commit,branch}`.
 - `full_history=True`: sin `--depth 1` (historial completo de la rama por defecto) y
-  Gitleaks **sin** `--no-git`, porque el control de secretos exige revisar el historial.
-- `analyze_directory(...)`: detecta lenguajes, gestores de dependencias, IaC, Dockerfiles
-  y CI del repo y activa solo las herramientas que aplican: OSV-Scanner sobre los
-  archivos de dependencias (con pip-audit / npm audit como contraste), Bandit solo si
-  hay Python, TruffleHog con verificación Valid/Invalid de secretos, Checkov o Trivy
-  sobre Terraform/CloudFormation, Hadolint o Trivy sobre Dockerfiles, zizmor sobre
-  workflows de GitHub Actions, chequeo de `.github/dependabot.yml`, Syft (SBOM
-  CycloneDX), ScanCode (licencias), OpenSSF Scorecard y depcheck/deptry (dependencias
-  sin usar). Todo scanner opcional: si no está instalado se informa en
-  `analysis.tools` (p. ej. `"unavailable"`) sin romper el análisis, como Gitleaks.
-  Cada hallazgo lleva `"tools": [...]` con las herramientas que lo detectaron
   (las detecciones repetidas entre herramientas se fusionan, conservando la
   severidad más alta y el veredicto de verificación). Los resúmenes van en
   `analysis.{stack, sbom, licenses, scorecard}`. Normaliza, deduplica y clasifica
@@ -269,7 +256,7 @@ python -m pytest backend/tests/ -v # suite completa de backend, contrato OpenAPI
 - CLI: `python bench/benchmark.py [--repo-ids ...] [--save-as-baseline] [--feature ...]`;
   smoke test del ejemplo pequeño: `python bench/test_tiny.py`.
 
-### `static/` — dashboard
+### `frontend/` — dashboard
 
 SPA en pestañas: Overview (KPIs + progreso + encabezado de resultado con repo, rama y
 SHA), Hallazgos (tabla filtrable con mensaje accionable por falla), Benchmark (tarjetas

@@ -1,5 +1,0 @@
-TestCaseNumber,CWE,Category,Result,Info
-1,CWE-78,Command Injection,1,os.system con entrada no confiable
-2,CWE-89,SQL Injection,1,consulta concatenada
-3,CWE-327,Weak Hash,1,uso de MD5
-4,,Safe Usage,0,consulta parametrizada

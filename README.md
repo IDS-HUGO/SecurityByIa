@@ -14,6 +14,9 @@ La plataforma combina:
 2. **Dashboard Cyber-Moderno (UI/UX):** Interfaz rediseñada en paleta Obsidian & Electric Cyan con visualización en tiempo real de hallazgos, contexto de código, severidades y filtros.
 3. **Módulo de Benchmarking y Regresión:** Medición objetiva de **Recall (True Positive Rate - TPR)** y **False Positive Rate (FPR)** frente a *Ground Truth* de referencia, desglose por categoría CWE y comparativa en puntos respecto a la corrida anterior y al `baseline.json`.
 
+Para instalar, configurar `.env`, levantar Docker, ejecutar el primer análisis y correr las
+pruebas, consulta la [Guía de ejecución](docs/ejecucion.md).
+
 ---
 
 ## 🚀 Nuevas Características y Mejoras Implementadas
@@ -128,10 +131,8 @@ demo-seguridad/
 │       ├── components/       # Componentes: Sidebar, Topbar, ScanCard, Tabs, Modals
 │       ├── App.jsx           # Aplicación principal y gestión de estado
 │       └── index.css         # Estilos cyber-modernos (Obsidian & Cyan)
-├── static/                   # Interfaz clásica Vanilla JS (mantenida para paridad)
-├── PARITY_CHECKLIST.md       # Matriz de paridad exhaustiva static/ vs frontend/
 ├── docker-compose.yml        # Orquestación de backend (:5000) y frontend (:80)
-└── pytest.ini                # Configuración de ejecución de pruebas
+└── .env.example              # Variables de entorno y configuración local
 ```
 
 ---

@@ -28,9 +28,8 @@ services:
       # del repositorio; sin él el endpoint /webhooks/github responde 503.
       # GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET}
       # GITHUB_TOKEN: ${GITHUB_TOKEN}
-      # Opcionales: descomentar y cargar por entorno, nunca commitear claves.
-      # GEMINI_API_KEY: ${GEMINI_API_KEY}
-      # GEMINI_MODEL: gemini-1.5-flash
+      # El backend recibe solo el nombre del modelo; la clave vive en el proxy.
+      GEMINI_MODEL: "${GEMINI_MODEL:-gemini-3.5-flash-lite}"
       # SECURITY_MAX_REPO_MB: "200"
       # SECURITY_CLONE_TIMEOUT: "300"
       # SECURITY_TOTAL_TIMEOUT: "1200"
@@ -51,12 +50,11 @@ services:
       PROXY_HOST: "0.0.0.0"
       PROXY_PORT: "5001"
       # Claves de proveedores: viven SOLO en este servicio, nunca en el backend.
-      # GEMINI_API_KEY: ${GEMINI_API_KEY}
-      # OPENAI_API_KEY: ${OPENAI_API_KEY}
-      # ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
       # Tokens limitados: JSON con hash SHA-256 (ver docs/proxy.md para generarlo).
-      # PROXY_TOKENS: '[{"id":"demo-triage","token_sha256":"...","providers":["gemini"],"rate_limit_per_minute":30}]'
-      # PROXY_TOKENS_FILE: /app/proxy/tokens.json
+      PROXY_TOKENS: "${PROXY_TOKENS:-[]}"
     volumes:
       - ./backend/storage:/app/storage
     restart: unless-stopped
