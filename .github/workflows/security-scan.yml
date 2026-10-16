@@ -1,0 +1,84 @@
+# Ejemplo de integración de Security Control Center en GitHub Actions.
+#
+# Dos modos:
+#   1. sast-pr: corre en cada pull request — Semgrep con las reglas del proyecto
+#      + OWASP Top 10 y Gitleaks con historial completo (el control de secretos
+#      exige revisar el historial de git). Los reportes se suben como artefactos.
+#   2. scheduled-analysis: análisis programado semanal con el CLI de la plataforma
+#      (python analyzer.py --url ... --full-history) sobre el propio repositorio.
+#
+# Nota: esta es una integración de ejemplo autocontenida; la plataforma también
+# puede recibir pull requests vía POST /webhooks/github con GITHUB_WEBHOOK_SECRET.
+
+name: Security Scan
+
+on:
+  pull_request:
+  schedule:
+    - cron: "0 6 * * 1" # lunes 06:00 UTC — análisis programado
+
+permissions:
+  contents: read
+
+jobs:
+  sast-pr:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout con historial completo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Gitleaks sin --no-git necesita el historial completo
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Instalar Semgrep
+        run: pip install semgrep
+      - name: Semgrep (reglas locales + OWASP Top 10)
+        run: |
+          semgrep --config rules/security-rules.yml --config=p/owasp-top-ten \
+            --json --quiet . > semgrep-results.json || true
+      - name: Gitleaks (historial completo, secretos redactados en el reporte)
+        run: |
+          GITLEAKS_VERSION=8.21.2
+          curl -fsSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" | tar -xz
+          ./gitleaks detect --report-format json --report-path gitleaks-results.json --redact || true
+      - name: Subir reportes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-reports
+          path: |
+            semgrep-results.json
+            gitleaks-results.json
+          if-no-files-found: ignore
+
+  scheduled-analysis:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout de la plataforma
+        uses: actions/checkout@v4
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Instalar la plataforma
+        run: pip install -r requirements.txt
+      - name: Análisis programado con historial completo
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Opcional, solo por entorno: nunca commitear claves.
+          # GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          python analyzer.py --url "https://github.com/${{ github.repository }}" --full-history
+      - name: Subir reportes generados
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scheduled-analysis-report
+          path: |
+            reporte_seguridad.json
+            reporte_seguridad.md
+          if-no-files-found: ignore

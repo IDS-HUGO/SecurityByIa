@@ -220,6 +220,7 @@
             <p class="eyebrow">HALLAZGOS DE SEGURIDAD</p>
             <h2>Vulnerabilidades priorizadas</h2>
           </div>
+          <div id="findings-summary-bar" class="findings-summary-bar hidden"></div>
           <div class="filters-grid">
             <select id="severity-filter" class="custom-select">
               <option value="">Todas las severidades</option>
@@ -233,6 +234,15 @@
             </select>
             <select id="cwe-filter" class="custom-select">
               <option value="">Todos los CWE</option>
+            </select>
+            <select id="tool-filter" class="custom-select">
+              <option value="">Todas las herramientas</option>
+            </select>
+            <select id="type-filter" class="custom-select">
+              <option value="">Todos los tipos</option>
+              <option value="code">Código (SAST)</option>
+              <option value="dependency">Dependencia (SCA)</option>
+              <option value="secret">Secreto (Secret Scanning)</option>
             </select>
             <select id="status-filter" class="custom-select">
               <option value="">Todos los estados</option>
@@ -252,12 +262,13 @@
                 <th>Hallazgo / Regla</th>
                 <th>OWASP & CWE</th>
                 <th>Ubicación</th>
+                <th style="width: 150px;">Detectado por</th>
                 <th style="width: 100px;">Estado</th>
               </tr>
             </thead>
             <tbody id="findings-body">
               <tr>
-                <td colspan="5" class="empty-row">
+                <td colspan="6" class="empty-row">
                   <div class="empty-state-compact">
                     <p>Inicia un análisis para ver los hallazgos de seguridad.</p>
                   </div>
@@ -469,6 +480,63 @@
                 <!-- Dynamic CWE rows generated here -->
               </tbody>
             </table>
+          </div>
+        </section>
+
+        <!-- Section: Tool Evaluations & Scanner Pairs Breakdown -->
+        <section class="card panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">EVALUACIÓN MULTI-HERRAMIENTA Y PARES</p>
+              <h2>Efecto de Cada Herramienta y Pares de Escáneres</h2>
+            </div>
+            <span class="meta-tag" id="bench-tools-count-tag">Evaluación de herramientas</span>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 24px;">
+            <div>
+              <h3 style="font-size: 13px; font-weight: 700; color: var(--cyan); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Herramientas Individuales</h3>
+              <div class="table-wrap">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Herramienta</th>
+                      <th>Recall (TPR)</th>
+                      <th>Precisión</th>
+                      <th>FPR</th>
+                      <th>Detecciones (TP)</th>
+                      <th>Falsos Positivos</th>
+                      <th>Falsos Negativos</th>
+                    </tr>
+                  </thead>
+                  <tbody id="bench-tools-table-body">
+                    <tr><td colspan="7" class="empty-row"><p class="muted">Inicia una corrida para evaluar el efecto de cada herramienta.</p></td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div>
+              <h3 style="font-size: 13px; font-weight: 700; color: var(--emerald); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Pares de Escáneres Combinados</h3>
+              <div class="table-wrap">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Par de Escáneres</th>
+                      <th>Recall Combinado</th>
+                      <th>Precisión</th>
+                      <th>FPR</th>
+                      <th>Detecciones (TP)</th>
+                      <th>Falsos Positivos</th>
+                      <th>Falsos Negativos</th>
+                    </tr>
+                  </thead>
+                  <tbody id="bench-pairs-table-body">
+                    <tr><td colspan="7" class="empty-row"><p class="muted">Inicia una corrida para evaluar combinaciones de escáneres.</p></td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </section>
 

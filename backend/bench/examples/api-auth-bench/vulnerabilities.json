@@ -1,0 +1,32 @@
+{
+  "vulnerabilities": [
+    {
+      "name": "Hardcoded Cloud API Secret",
+      "vuln_code_snippet": "api.py",
+      "vuln_line": 6,
+      "cwe": "CWE-798",
+      "category": "Credentials"
+    },
+    {
+      "name": "Broken Cryptographic Password Hash",
+      "vuln_code_snippet": "api.py",
+      "vuln_line": 12,
+      "cwe": "CWE-327",
+      "category": "Cryptography"
+    },
+    {
+      "name": "SQL Injection in User Lookup",
+      "vuln_code_snippet": "api.py",
+      "vuln_line": 18,
+      "cwe": "CWE-89",
+      "category": "Injection"
+    },
+    {
+      "name": "Arbitrary Code Execution in Plugin Endpoint",
+      "vuln_code_snippet": "api.py",
+      "vuln_line": 24,
+      "cwe": "CWE-94",
+      "category": "Injection"
+    }
+  ]
+}

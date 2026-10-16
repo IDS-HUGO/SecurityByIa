@@ -178,7 +178,7 @@ class TestMatchFindings(unittest.TestCase):
 
 class TestCalculateMetrics(unittest.TestCase):
     def test_recall_tpr_fpr(self):
-        metrics = benchmark_service.calculate_metrics_dict(tp=2, fp=1, fn=1)
+        metrics = benchmark_service.calculate_metrics_dict(tp=2, fp=1, fn=2)
         self.assertEqual(metrics["recall"], 0.5)
         self.assertEqual(metrics["tpr"], 0.5)
         self.assertEqual(metrics["fpr"], 0.333)

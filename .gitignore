@@ -13,6 +13,7 @@ __pycache__/
 
 # --- Estado en runtime (el código recrea estos archivos al arrancar) ---
 storage/
+backend/storage/
 reporte_seguridad.json
 reporte_seguridad.md
 
@@ -23,9 +24,15 @@ reporte_seguridad.md
 bench/cloned/
 bench/downloads/
 bench/results/
+backend/bench/cloned/
+backend/bench/downloads/
+backend/bench/results/
 
-# --- Node / tooling local ---
+# --- Node / Frontend tooling ---
 node_modules/
+**/node_modules/
+dist/
+**/dist/
 
 # --- Sistema / editores ---
 .DS_Store

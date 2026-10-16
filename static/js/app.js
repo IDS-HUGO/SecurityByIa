@@ -97,6 +97,10 @@ const normalizeStatus = (value) => {
 const normalizeFinding = (item) => ({
   ...item,
   severity: text(item.severity, 'low').toLowerCase(),
+  severity_reason: text(item.severity_reason, 'Evaluado según exposición y controles de seguridad.'),
+  remediation_deadline: text(item.remediation_deadline, '180 días'),
+  tools: Array.isArray(item.tools) && item.tools.length ? item.tools : ['semgrep'],
+  package: item.package || (item.extra && item.extra.package) || null,
   file: text(item.file || item.archivo, 'Unknown file'),
   title: text(item.title || item.problema || item.rule || item.regla, 'Security finding'),
   rule: text(item.rule || item.regla, '—'),
@@ -213,25 +217,136 @@ function fillFilter(id, values, label) {
   select.value = values.includes(current) ? current : '';
 }
 
+function renderSummaryBar() {
+  const bar = $('findings-summary-bar');
+  if (!bar) return;
+  if (!state.findings.length) {
+    bar.classList.add('hidden');
+    return;
+  }
+  bar.classList.remove('hidden');
+  bar.replaceChildren();
+
+  // 1. Group: Por Severidad
+  const sevGroup = document.createElement('div');
+  sevGroup.className = 'summary-bar-group';
+  const sevLabel = document.createElement('span');
+  sevLabel.className = 'summary-bar-label';
+  sevLabel.textContent = 'Por Severidad:';
+  sevGroup.appendChild(sevLabel);
+
+  const curSev = $('severity-filter') ? $('severity-filter').value : '';
+  const severities = ['critical', 'high', 'medium', 'low'];
+  const sevNames = { critical: 'Crítico', high: 'Alto', medium: 'Medio', low: 'Bajo' };
+
+  const allSevPill = document.createElement('span');
+  allSevPill.className = `summary-pill ${!curSev ? 'active' : ''}`;
+  allSevPill.innerHTML = `Todas <span class="summary-pill-count">${state.findings.length}</span>`;
+  allSevPill.addEventListener('click', () => {
+    if ($('severity-filter')) $('severity-filter').value = '';
+    renderFindings();
+  });
+  sevGroup.appendChild(allSevPill);
+
+  severities.forEach((sev) => {
+    const count = state.findings.filter((f) => f.severity === sev).length;
+    const pill = document.createElement('span');
+    pill.className = `summary-pill ${curSev === sev ? 'active' : ''}`;
+    pill.innerHTML = `<span class="badge badge-${sev}" style="padding: 1px 6px; font-size: 11px;">${sevNames[sev]}</span> <span class="summary-pill-count">${count}</span>`;
+    pill.addEventListener('click', () => {
+      if ($('severity-filter')) {
+        $('severity-filter').value = $('severity-filter').value === sev ? '' : sev;
+      }
+      renderFindings();
+    });
+    sevGroup.appendChild(pill);
+  });
+
+  // 2. Group: Por Categoría OWASP
+  const owaspGroup = document.createElement('div');
+  owaspGroup.className = 'summary-bar-group';
+  const owaspLabel = document.createElement('span');
+  owaspLabel.className = 'summary-bar-label';
+  owaspLabel.textContent = 'Por OWASP:';
+  owaspGroup.appendChild(owaspLabel);
+
+  const curOwasp = $('owasp-filter') ? $('owasp-filter').value : '';
+  const owaspCounts = {};
+  state.findings.forEach((f) => {
+    if (f.owasp) {
+      owaspCounts[f.owasp] = (owaspCounts[f.owasp] || 0) + 1;
+    }
+  });
+
+  Object.entries(owaspCounts).sort().forEach(([cat, count]) => {
+    const shortCat = cat.split(' - ')[0] || cat;
+    const pill = document.createElement('span');
+    pill.className = `summary-pill ${curOwasp === cat ? 'active' : ''}`;
+    pill.title = cat;
+    pill.innerHTML = `<span>${escapeHtml(shortCat)}</span> <span class="summary-pill-count">${count}</span>`;
+    pill.addEventListener('click', () => {
+      if ($('owasp-filter')) {
+        $('owasp-filter').value = $('owasp-filter').value === cat ? '' : cat;
+      }
+      renderFindings();
+    });
+    owaspGroup.appendChild(pill);
+  });
+
+  bar.append(sevGroup, owaspGroup);
+}
+
 function renderFindings() {
   fillFilter('owasp-filter', state.findings.map((item) => item.owasp), 'Todas las categorías OWASP');
   fillFilter('cwe-filter', state.findings.map((item) => item.cwe), 'Todos los CWE');
 
-  const severity = $('severity-filter').value;
-  const owasp = $('owasp-filter').value;
-  const cwe = $('cwe-filter').value;
-  const status = $('status-filter').value;
-  const file = $('file-filter').value.toLowerCase();
+  // Fill tool filter dynamically
+  const allTools = [];
+  state.findings.forEach((f) => (f.tools || []).forEach((t) => allTools.push(t)));
+  fillFilter('tool-filter', allTools, 'Todas las herramientas');
+
+  const severity = $('severity-filter') ? $('severity-filter').value : '';
+  const owasp = $('owasp-filter') ? $('owasp-filter').value : '';
+  const cwe = $('cwe-filter') ? $('cwe-filter').value : '';
+  const tool = $('tool-filter') ? $('tool-filter').value : '';
+  const type = $('type-filter') ? $('type-filter').value : '';
+  const status = $('status-filter') ? $('status-filter').value : '';
+  const file = $('file-filter') ? $('file-filter').value.toLowerCase() : '';
+
+  const isDependency = (f) => {
+    if (f.package) return true;
+    const depTools = ['osv-scanner', 'pip-audit', 'npm-audit', 'dependabot', 'deptry', 'depcheck'];
+    return (f.tools || []).some((t) => depTools.includes(t)) || (f.cwe && (f.cwe.includes('1104') || f.cwe.includes('937')));
+  };
+
+  const isSecret = (f) => {
+    const secTools = ['gitleaks', 'trufflehog'];
+    return (f.tools || []).some((t) => secTools.includes(t)) ||
+      (f.rule && f.rule.toLowerCase().includes('secret')) ||
+      (f.cwe && (f.cwe.includes('798') || f.cwe.includes('259')));
+  };
+
+  const matchesType = (f, t) => {
+    if (!t) return true;
+    if (t === 'dependency') return isDependency(f);
+    if (t === 'secret') return isSecret(f);
+    if (t === 'code') return !isDependency(f) && !isSecret(f);
+    return true;
+  };
 
   const visible = state.findings.filter((item) => {
     return (
       (!severity || item.severity === severity) &&
       (!owasp || item.owasp === owasp) &&
       (!cwe || item.cwe === cwe) &&
+      (!tool || (item.tools || []).includes(tool)) &&
+      matchesType(item, type) &&
       (!status || item.status === status) &&
       (!file || item.file.toLowerCase().includes(file))
     );
   });
+
+  renderSummaryBar();
 
   const body = $('findings-body');
   body.replaceChildren();
@@ -239,7 +354,7 @@ function renderFindings() {
   if (!visible.length) {
     const row = document.createElement('tr');
     const cell = document.createElement('td');
-    cell.colSpan = 5;
+    cell.colSpan = 6;
     cell.className = 'empty-row';
     cell.innerHTML = `
       <div class="empty-state-compact">
@@ -255,7 +370,8 @@ function renderFindings() {
     row.addEventListener('click', () => showDetail(item));
 
     const tdSeverity = document.createElement('td');
-    tdSeverity.innerHTML = `<span class="badge badge-${item.severity}">${item.severity}</span>`;
+    const sevLabel = { critical: 'CRÍTICO', high: 'ALTO', medium: 'MEDIO', low: 'BAJO' }[item.severity] || item.severity.toUpperCase();
+    tdSeverity.innerHTML = `<span class="badge badge-${item.severity}">${escapeHtml(sevLabel)}</span>`;
 
     const tdFinding = document.createElement('td');
     tdFinding.innerHTML = `
@@ -270,10 +386,18 @@ function renderFindings() {
     const tdLoc = document.createElement('td');
     tdLoc.innerHTML = `<code style="font-family: var(--font-mono); font-size: 11px; color: var(--text-secondary);">${escapeHtml(item.file)}:${text(item.line, '?')}</code>`;
 
+    const tdTools = document.createElement('td');
+    tdTools.className = 'td-tools';
+    const tools = Array.isArray(item.tools) && item.tools.length ? item.tools : ['semgrep'];
+    tdTools.innerHTML = tools.map((t) => {
+      const cls = t.toLowerCase().replace(/[^a-z0-9_-]/g, '');
+      return `<span class="tool-tag ${cls}">${escapeHtml(t)}</span>`;
+    }).join(' ');
+
     const tdStatus = document.createElement('td');
     tdStatus.innerHTML = `<span class="status status-${item.status}">${item.status}</span>`;
 
-    row.append(tdSeverity, tdFinding, tdOwasp, tdLoc, tdStatus);
+    row.append(tdSeverity, tdFinding, tdOwasp, tdLoc, tdTools, tdStatus);
     body.appendChild(row);
   });
 }
@@ -289,13 +413,46 @@ function showDetail(item) {
   meta.className = 'finding-detail-meta';
   meta.textContent = `${item.file}:${text(item.line, '?')} · ${item.owasp} · ${item.cwe} · Severidad: ${item.severity.toUpperCase()}`;
 
+  // Severity reason & SLA remediation deadline (F4)
+  const reasonBox = document.createElement('div');
+  reasonBox.className = 'detail-reason-box';
+  reasonBox.innerHTML = `
+    <div style="margin-bottom: 6px;">
+      <strong style="color: var(--text-main);">Motivo de severidad:</strong>
+      <span style="color: var(--text-secondary);">${escapeHtml(item.severity_reason || 'Calculada según exposición y controles de seguridad.')}</span>
+    </div>
+    <div>
+      <strong style="color: var(--text-main);">Plazo de remediación (Control 6):</strong>
+      <span class="badge badge-${item.severity}" style="margin-left: 6px; padding: 2px 8px; font-size: 11px;">${escapeHtml(item.remediation_deadline || 'No especificado')}</span>
+    </div>
+  `;
+
+  // Dependency details (F3: paquete, versión instalada, versión corregida)
+  let depBox = null;
+  const pkg = item.package || (item.extra && item.extra.package);
+  if (pkg && typeof pkg === 'object') {
+    depBox = document.createElement('div');
+    depBox.className = 'detail-dep-box';
+    depBox.innerHTML = `
+      <h4 style="margin: 0 0 8px 0; font-size: 13px; color: var(--cyan); text-transform: uppercase; letter-spacing: 0.05em;">Detalle de Dependencia (SCA)</h4>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; font-size: 12px;">
+        <div><strong>Paquete:</strong> <code>${escapeHtml(pkg.name || 'Desconocido')}</code></div>
+        <div><strong>Versión instalada:</strong> <code style="color: var(--orange);">${escapeHtml(pkg.version || 'No reportada')}</code></div>
+        <div><strong>Versión corregida:</strong> <code style="color: var(--emerald);">${escapeHtml(pkg.fixed_version || 'No reportada')}</code></div>
+        ${pkg.ecosystem ? `<div><strong>Ecosistema:</strong> <span>${escapeHtml(pkg.ecosystem)}</span></div>` : ''}
+      </div>
+    `;
+  }
+
   const problem = document.createElement('p');
   problem.innerHTML = `<strong>Problema detectado:</strong> ${escapeHtml(item.problem)}`;
 
   const solution = document.createElement('p');
   solution.innerHTML = `<strong>Recomendación técnica:</strong> ${escapeHtml(item.solution)}`;
 
-  panel.append(title, meta, problem, solution);
+  panel.append(title, meta, reasonBox);
+  if (depBox) panel.appendChild(depBox);
+  panel.append(problem, solution);
 
   if (Array.isArray(item.code_context) && item.code_context.length) {
     const code = document.createElement('pre');
@@ -574,8 +731,73 @@ function renderBenchmark(data) {
   // Render CWE Breakdown Table
   renderCweTable(latest.cwe_categories || []);
 
+  // Render Tool Evaluations & Scanner Pairs (F3)
+  renderToolEvaluations(latest.tool_evaluations || [], latest.scanner_pairs || []);
+
   // Render History
   renderBenchHistory(data.history || []);
+}
+
+function renderToolEvaluations(toolEvals = [], pairsEvals = []) {
+  const toolsBody = $('bench-tools-table-body');
+  if (toolsBody) {
+    toolsBody.replaceChildren();
+    if (!toolEvals.length) {
+      toolsBody.innerHTML = `<tr><td colspan="7" class="empty-row text-center muted">No se registraron herramientas individuales en esta corrida.</td></tr>`;
+    } else {
+      toolEvals.forEach((item) => {
+        const row = document.createElement('tr');
+        const recPct = ((item.recall || 0) * 100).toFixed(1);
+        const precPct = ((item.precision || 0) * 100).toFixed(1);
+        const fprPct = ((item.fpr || 0) * 100).toFixed(1);
+        const cls = String(item.tool || '').toLowerCase().replace(/[^a-z0-9_-]/g, '');
+        row.innerHTML = `
+          <td><span class="tool-tag ${cls}">${escapeHtml(item.tool)}</span></td>
+          <td><strong style="color: var(--cyan);">${recPct}%</strong></td>
+          <td><strong style="color: var(--emerald);">${precPct}%</strong></td>
+          <td><span style="color: var(--orange);">${fprPct}%</span></td>
+          <td>${item.true_positives} / ${item.total_ground_truth}</td>
+          <td>${item.false_positives}</td>
+          <td>${item.false_negatives}</td>
+        `;
+        toolsBody.appendChild(row);
+      });
+    }
+  }
+
+  const pairsBody = $('bench-pairs-table-body');
+  if (pairsBody) {
+    pairsBody.replaceChildren();
+    if (!pairsEvals.length) {
+      pairsBody.innerHTML = `<tr><td colspan="7" class="empty-row text-center muted">No se registraron combinaciones de escáneres en esta corrida.</td></tr>`;
+    } else {
+      pairsEvals.forEach((pair) => {
+        const row = document.createElement('tr');
+        const recPct = ((pair.recall || 0) * 100).toFixed(1);
+        const precPct = ((pair.precision || 0) * 100).toFixed(1);
+        const fprPct = ((pair.fpr || 0) * 100).toFixed(1);
+        const tags = (pair.tools || []).map((t) => {
+          const cls = String(t).toLowerCase().replace(/[^a-z0-9_-]/g, '');
+          return `<span class="tool-tag ${cls}">${escapeHtml(t)}</span>`;
+        }).join(' <span style="color: var(--text-muted); font-size: 10px;">+</span> ');
+        row.innerHTML = `
+          <td>${tags}</td>
+          <td><strong style="color: var(--cyan);">${recPct}%</strong></td>
+          <td><strong style="color: var(--emerald);">${precPct}%</strong></td>
+          <td><span style="color: var(--orange);">${fprPct}%</span></td>
+          <td>${pair.true_positives} / ${pair.total_ground_truth}</td>
+          <td>${pair.false_positives}</td>
+          <td>${pair.false_negatives}</td>
+        `;
+        pairsBody.appendChild(row);
+      });
+    }
+  }
+
+  const tag = $('bench-tools-count-tag');
+  if (tag) {
+    tag.textContent = `${toolEvals.length} herramientas · ${pairsEvals.length} combinaciones`;
+  }
 }
 
 function applyDeltaBadge(elementId, pts, invert = false, hasPrevious = true) {
@@ -826,9 +1048,12 @@ $('scan-form').addEventListener('submit', async (event) => {
   }
 });
 
-['severity-filter', 'owasp-filter', 'cwe-filter', 'status-filter', 'file-filter'].forEach((id) => {
+['severity-filter', 'owasp-filter', 'cwe-filter', 'tool-filter', 'type-filter', 'status-filter', 'file-filter'].forEach((id) => {
   const el = $(id);
-  if (el) el.addEventListener('input', renderFindings);
+  if (el) {
+    el.addEventListener('input', renderFindings);
+    el.addEventListener('change', renderFindings);
+  }
 });
 
 $('refresh-history').addEventListener('click', loadHistory);

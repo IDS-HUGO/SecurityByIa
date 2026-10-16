@@ -19,6 +19,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 import yaml
 
 import analyzer
+import triage_agent
 
 ROOT_DIR = Path(__file__).resolve().parent
 BENCH_DIR = ROOT_DIR / "bench"
@@ -83,7 +84,7 @@ def _clean_cwe(raw_cwe: Any) -> str:
         raw_cwe = raw_cwe[0]
     raw_str = str(raw_cwe or "").strip()
     match = re.search(r"CWE-\d+", raw_str, re.IGNORECASE)
-    return match.group(0).upper() if match else (raw_str or "CWE-Other")
+    return match.group(0).upper() if match else "CWE-Other"
 
 
 def detect_git_feature() -> str:
@@ -598,6 +599,119 @@ def get_benchmark_status() -> Dict[str, Any]:
         "history": get_history()[:10],
     }
 
+def evaluate_tools_and_pairs(repos_results: List[Dict[str, Any]]) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    """Calculate Recall, Precision, TP, FP, FN for each individual scanner tool
+    and for each scanner pair across benchmark reference repositories.
+    """
+    distinct_tools = set()
+    for r in repos_results:
+        for det in r.get("raw_detected", []):
+            for t in (det.get("tools") or []):
+                distinct_tools.add(str(t))
+
+    sorted_tools = sorted(distinct_tools)
+    tool_evals = []
+
+    # Single tool evaluations
+    for t in sorted_tools:
+        total_tp = 0
+        total_fp = 0
+        total_fn = 0
+        total_gt = 0
+        total_det = 0
+
+        for r in repos_results:
+            gt_items = [
+                GroundTruthItem(
+                    file=item.get("file", ""),
+                    line=int(item.get("line") or 1),
+                    rule_id=str(item.get("rule_id", "")),
+                    cwe=str(item.get("cwe", "CWE-Other")),
+                    category=item.get("category"),
+                )
+                for item in r.get("raw_ground_truth", [])
+            ]
+            t_findings = [f for f in r.get("raw_detected", []) if t in (f.get("tools") or [])]
+            _, _, tp, fp, fn = match_findings(gt_items, t_findings)
+            total_tp += tp
+            total_fp += fp
+            total_fn += fn
+            total_gt += len(gt_items)
+            total_det += len(t_findings)
+
+        rec = round(total_tp / total_gt, 3) if total_gt > 0 else 0.0
+        prec = round(total_tp / total_det, 3) if total_det > 0 else 0.0
+        fpr = round(total_fp / max(1, total_det), 3) if total_det > 0 else 0.0
+
+        tool_evals.append({
+            "tool": t,
+            "true_positives": total_tp,
+            "false_positives": total_fp,
+            "false_negatives": total_fn,
+            "total_detected": total_det,
+            "total_ground_truth": total_gt,
+            "recall": rec,
+            "tpr": rec,
+            "precision": prec,
+            "fpr": fpr,
+        })
+
+    tool_evals.sort(key=lambda x: (x["recall"], x["precision"]), reverse=True)
+
+    # Scanner pairs evaluations
+    pairs_evals = []
+    for i in range(len(sorted_tools)):
+        for j in range(i + 1, len(sorted_tools)):
+            t1, t2 = sorted_tools[i], sorted_tools[j]
+            total_tp = 0
+            total_fp = 0
+            total_fn = 0
+            total_gt = 0
+            total_det = 0
+
+            for r in repos_results:
+                gt_items = [
+                    GroundTruthItem(
+                        file=item.get("file", ""),
+                        line=int(item.get("line") or 1),
+                        rule_id=str(item.get("rule_id", "")),
+                        cwe=str(item.get("cwe", "CWE-Other")),
+                        category=item.get("category"),
+                    )
+                    for item in r.get("raw_ground_truth", [])
+                ]
+                pair_findings = [
+                    f for f in r.get("raw_detected", [])
+                    if t1 in (f.get("tools") or []) or t2 in (f.get("tools") or [])
+                ]
+                _, _, tp, fp, fn = match_findings(gt_items, pair_findings)
+                total_tp += tp
+                total_fp += fp
+                total_fn += fn
+                total_gt += len(gt_items)
+                total_det += len(pair_findings)
+
+            rec = round(total_tp / total_gt, 3) if total_gt > 0 else 0.0
+            prec = round(total_tp / total_det, 3) if total_det > 0 else 0.0
+            fpr = round(total_fp / max(1, total_det), 3) if total_det > 0 else 0.0
+
+            pairs_evals.append({
+                "tools": [t1, t2],
+                "pair_label": f"{t1} + {t2}",
+                "true_positives": total_tp,
+                "false_positives": total_fp,
+                "false_negatives": total_fn,
+                "total_detected": total_det,
+                "total_ground_truth": total_gt,
+                "recall": rec,
+                "tpr": rec,
+                "precision": prec,
+                "fpr": fpr,
+            })
+
+    pairs_evals.sort(key=lambda x: (x["recall"], x["precision"]), reverse=True)
+    return tool_evals, pairs_evals
+
 
 def execute_benchmark_task(
     feature_name: Optional[str] = None,
@@ -767,6 +881,18 @@ def execute_benchmark_task(
                 "sample_findings": r["sample_findings"],
             })
 
+        # Tool & Scanner Pairs breakdown evaluations
+        tool_evaluations, scanner_pairs = evaluate_tools_and_pairs(repos_results)
+
+        # Multi-model AI triage FPR comparison (Gemini vs OpenAI vs Claude)
+        all_detected_findings = []
+        for r in repos_results:
+            all_detected_findings.extend(r.get("raw_detected", []))
+        triage_benchmark = triage_agent.evaluate_multi_model_triage_benchmark(
+            all_detected_findings,
+            raw_fpr=avg_fpr,
+        )
+
         duration = round((datetime.now(timezone.utc) - now_utc).total_seconds(), 2)
 
         run_output: Dict[str, Any] = {
@@ -795,6 +921,9 @@ def execute_benchmark_task(
             },
             "repositories": clean_repositories,
             "cwe_categories": cwe_categories,
+            "tool_evaluations": tool_evaluations,
+            "scanner_pairs": scanner_pairs,
+            "triage_benchmark": triage_benchmark,
         }
 
         _save_run_result(run_output, save_as_baseline=save_as_baseline)

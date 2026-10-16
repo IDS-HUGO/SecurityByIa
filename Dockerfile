@@ -21,8 +21,9 @@ RUN apt-get update \
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY analyzer.py benchmark_service.py api_server.py ./
+COPY analyzer.py benchmark_service.py api_server.py scanner_tools.py severity_engine.py ./
 COPY rules/ rules/
+COPY data/ data/
 COPY static/ static/
 COPY bench/ bench/
 

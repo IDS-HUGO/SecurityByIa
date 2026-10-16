@@ -1,0 +1,39 @@
+{
+  "vulnerabilities": [
+    {
+      "name": "Command Injection",
+      "vuln_code_snippet": "app.py",
+      "vuln_line": 7,
+      "cwe": "CWE-78",
+      "category": "Injection"
+    },
+    {
+      "name": "SQL Injection",
+      "vuln_code_snippet": "app.py",
+      "vuln_line": 13,
+      "cwe": "CWE-89",
+      "category": "Injection"
+    },
+    {
+      "name": "Code Injection",
+      "vuln_code_snippet": "app.py",
+      "vuln_line": 19,
+      "cwe": "CWE-94",
+      "category": "Injection"
+    },
+    {
+      "name": "Broken Cryptography",
+      "vuln_code_snippet": "app.py",
+      "vuln_line": 26,
+      "cwe": "CWE-327",
+      "category": "Cryptography"
+    },
+    {
+      "name": "Hardcoded Credentials",
+      "vuln_code_snippet": "app.py",
+      "vuln_line": 31,
+      "cwe": "CWE-798",
+      "category": "Credentials"
+    }
+  ]
+}

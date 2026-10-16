@@ -44,6 +44,23 @@ La plataforma combina:
 - Navegación lateral limpia por pestañas: **Overview**, **Hallazgos**, **Benchmark** y **Reporte**.
 - Tipografía moderna con soporte monoespaciado (`JetBrains Mono` y `Outfit`).
 
+### 4. Triage con IA que sí ve el Código (Feature 5)
+- **Contexto Acotado y Seguro:** Extracción de 20 líneas de código fuente centradas en el hallazgo, con redacción exhaustiva de secretos (`[REDACTED_SECRET]`) y delimitación estricta `<BOUNDED_CODE_EXCERPT_DATA>`.
+- **Activación Opt-in Estricta:** El código nunca sale a un modelo externo sin consentimiento explícito (variable `ENABLE_AI_TRIAGE=true` o casilla en el formulario de escaneo).
+- **Esquema Validado y Fail-Open:** Respuestas JSON validadas (`verdadero`, `falso`, `incierto`). Cualquier fallo o ambigüedad cae en *fail-open* enviando el hallazgo a revisión humana.
+- **Cola "Por revisar":** Vista priorizada que filtra y ordena los hallazgos inciertos de mayor a menor severidad (`Crítico` > `Alto` > `Medio` > `Bajo`).
+- **Decisiones Humanas con Huella Persistente:** Botones de acción (*Confirmar*, *Falso Positivo*, *Incierto*) con justificación obligatoria. Los falsos positivos confirmados generan una huella SHA256 (`storage/known_false_positives.json`) que los suprime automáticamente en futuros análisis.
+- **Comparativa Multi-Modelo en Benchmark:** Evaluación comparativa del impacto en la tasa de falsos positivos (FPR) evaluando Gemini, OpenAI y Claude con el mismo prompt estandarizado.
+
+### 5. Corrección Asistida con Verificación (Feature 6)
+- **Agente Fixer con Diffs Unificados Mínimos:** Genera un diff unificado estándar para cada hallazgo utilizando plantillas seguras deterministas sin IA (`yaml.safe_load`, `verify=True`, actualización de dependencias vulnerables en `requirements.txt` y `package.json`, desactivación de `DEBUG=True` y mitigación de `shell=True`).
+- **Bucle de Verificación en Rama Temporal Aislada:** Aplica el parche con `git apply` en una rama temporal aislada (`patch-verify-<uuid>`) y re-escanea con Semgrep únicamente los archivos tocados.
+- **Descarte Automático de Parches Inseguros:** Si el hallazgo persiste o se introduce una nueva alerta de seguridad, el parche se descarta automáticamente (`status: "discarded"`). Si se resuelve limpiamente sin nuevos hallazgos, queda marcado como verificado (`status: "verified"`).
+- **Protección Estricta del Repositorio:** El fixer **nunca hace push a la rama principal** (`main` o `master`).
+- **Pruebas del Proyecto en Sandbox sin Red:** Las pruebas del proyecto analizado se ejecutan únicamente con opt-in explícito en repositorios propios y dentro de un contenedor Docker aislado sin acceso a red (`docker run --network none`).
+- **Vista de Revisión del Parche en Frontend:** Visualización lado a lado (Side-by-Side) o unificada, estado de verificación, y botones *Aprobar* y *Rechazar* con motivo obligatorio.
+- **Ciclo de Vida Visible del Hallazgo:** Estados visibles en la tabla y detalle: `abierto`, `parche propuesto`, `verificado`, `descartado`, `aprobado`, `rechazado`.
+
 ---
 
 ## 🏗️ Arquitectura del Sistema
@@ -82,91 +99,82 @@ La plataforma combina:
 
 ---
 
-## ⚙️ Estructura del Proyecto
+## ⚙️ Estructura del Proyecto (F4B)
 
 ```
 demo-seguridad/
-├── analyzer.py               # Motor principal de análisis SAST, Semgrep y Gitleaks
-├── api_server.py             # API Flask con endpoints de análisis y benchmark
-├── benchmark_service.py      # Servicio de benchmark, matching de ground truth y métricas
-├── requirements.txt          # Dependencias de Python (Flask, Semgrep, PyYAML, etc.)
-├── reporte_seguridad.md      # Reporte auditable de referencia
-├── rules/
-│   └── security-rules.yml    # Reglas SAST personalizadas (CWE-78, 89, 94, 327, 798, etc.)
-├── bench/
-│   ├── refs.yml              # Configuración de repositorios de referencia para benchmark
-│   ├── benchmark.py          # CLI de benchmark (clona, analiza, compara y persiste)
-│   ├── test_tiny.py          # Corrida de ejemplo pequeño (smoke test)
-│   ├── results/              # Resultados serializados de benchmark
-│   └── examples/             # Datasets de referencia con ground truth
-│       ├── juice-shop-sample/      # vulnerabilidades.json (vuln_code_snippet + vuln_line)
-│       ├── benchmark-python/       # expectedresults-0.1.csv (caso + CWE)
-│       ├── tiny-vuln-app/
-│       ├── owasp-web-bench/
-│       └── api-auth-bench/
-├── tests/
-│   └── test_benchmark.py     # Suite unittest del benchmark (ejemplo pequeño autónomo)
-├── static/
-│   ├── index.html            # Dashboard web con pestañas Overview, Hallazgos y Benchmark
-│   ├── css/styles.css        # Estilos cyber-modernos (Obsidian & Cyan)
-│   └── js/app.js             # Lógica cliente, navegación de tabs y polling
-└── storage/
-    ├── analyses/             # Historial de análisis de repositorios externos
-    └── benchmark/            # Almacenamiento de baseline.json, latest.json y corridas
+├── backend/                  # Servicio exclusivo de API REST y motor de análisis
+│   ├── api_server.py         # Servidor Flask (solo JSON, CORS configurable, sin HTML)
+│   ├── analyzer.py           # Motor principal de análisis SAST y escaneo de secretos
+│   ├── benchmark_service.py  # Servicio de benchmark de precisión y regresión
+│   ├── scanner_tools.py      # Adaptadores multi-herramienta y detección de stack
+│   ├── severity_engine.py    # Motor de severidad contextual, OWASP 2021 y SLA Control 6
+│   ├── triage_agent.py       # Agente de triage IA, contexto acotado y huella de falsos positivos (F5)
+│   ├── openapi.yaml          # Contrato formal OpenAPI 3.0 de la API
+│   ├── requirements.txt      # Dependencias de Python
+│   ├── Dockerfile            # Imagen backend independiente
+│   ├── rules/                # Reglas Semgrep personalizadas
+│   ├── data/                 # cwe_owasp_2021.json y controls_inventory.json
+│   ├── storage/              # Almacenamiento de análisis y benchmark
+│   ├── bench/                # Scripts y datasets de referencia
+│   └── tests/                # Suite de pruebas unitarias, CORS y contrato OpenAPI
+├── frontend/                 # Aplicación SPA en React con Vite
+│   ├── package.json          # Dependencias de React
+│   ├── vite.config.js        # Configuración de Vite con proxy a /api
+│   ├── nginx.conf            # Servidor web Nginx y reverse proxy de producción
+│   ├── Dockerfile            # Imagen multi-stage (builder -> nginx)
+│   └── src/
+│       ├── api/client.js     # Capa única de acceso a la API (VITE_API_BASE_URL)
+│       ├── components/       # Componentes: Sidebar, Topbar, ScanCard, Tabs, Modals
+│       ├── App.jsx           # Aplicación principal y gestión de estado
+│       └── index.css         # Estilos cyber-modernos (Obsidian & Cyan)
+├── static/                   # Interfaz clásica Vanilla JS (mantenida para paridad)
+├── PARITY_CHECKLIST.md       # Matriz de paridad exhaustiva static/ vs frontend/
+├── docker-compose.yml        # Orquestación de backend (:5000) y frontend (:80)
+└── pytest.ini                # Configuración de ejecución de pruebas
 ```
 
 ---
 
 ## 💻 Instalación y Puesta en Marcha
 
-### Requisitos Previos
-- Python 3.10 o superior.
-- Git en el `PATH`.
-- Semgrep instalado (`pip install semgrep`).
-- Gitleaks (opcional para secret scanning local).
+### Opción A: Desarrollo Local (dos terminales)
 
-### 1. Clonar y configurar entorno virtual
-
+**Terminal 1 — Backend (Flask):**
 ```bash
-# En Linux / macOS:
 python3 -m venv .venv
 source .venv/bin/activate
-
-# En Windows (PowerShell):
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
+pip install -r backend/requirements.txt
+python backend/api_server.py
 ```
+*API escuchando en `http://127.0.0.1:5000`*.
 
-### 2. Instalar dependencias
+**Terminal 2 — Frontend (React + Vite):**
+```bash
+cd frontend
+npm install
+npm run dev
+```
+*Frontend disponible en `http://localhost:5173` con proxy automático a `/api`*.
+
+### Opción B: Producción con Docker Compose
 
 ```bash
-pip install -r requirements.txt
+docker compose up --build
 ```
-
-### 3. Ejecutar la aplicación
-
-```bash
-python api_server.py
-```
-
-Abre en tu navegador: **`http://localhost:5000`**
+*Frontend en `http://localhost` (puerto 80) conectado con el backend a través de Nginx*.
 
 ---
 
-## 📡 Referencia de la API
+## 📡 Referencia de la API y Contrato OpenAPI
 
-### Endpoints de Análisis SAST
+El contrato completo está formalizado en `backend/openapi.yaml` y disponible en `GET /openapi.yaml`.
 
 | Método | Ruta | Descripción |
 | :--- | :--- | :--- |
 | `POST` | `/api/analyze` | Inicia análisis asíncrono de un repositorio de GitHub (`{"url": "..."}`). |
 | `GET` | `/api/analysis/<id>` | Consulta progreso y resultados del análisis. |
 | `GET` | `/api/analyses` | Lista los análisis realizados recientemente. |
-
-### Endpoints de Benchmarking
-
-| Método | Ruta | Descripción |
-| :--- | :--- | :--- |
 | `GET` | `/api/bench` | Estado actual, última corrida (`latest_run`), baseline y resumen de repos. |
 | `POST` | `/api/bench/run` | Dispara corrida de benchmark (`{"feature": "...", "save_as_baseline": false}`). Concurrencia única (409 si está ocupado). |
 | `GET` | `/api/bench/baseline` | Obtiene el reporte de referencia fijado como `baseline.json`. |
@@ -175,21 +183,19 @@ Abre en tu navegador: **`http://localhost:5000`**
 
 ### CLI de Benchmark
 
-La misma suite está disponible como script (clona/copía cada referencia a una carpeta ignorada por git, ejecuta el motor `analyzer.analyze_directory` —el mismo pipeline de `analyzer.analyze_repo`—, compara contra el ground truth y guarda la corrida en `bench/results/` con la versión de Semgrep, las reglas aplicadas y los commits evaluados):
-
 ```bash
-python bench/benchmark.py                                    # todas las referencias
-python bench/benchmark.py --repo-ids repo-juice-sample       # solo un subconjunto
-python bench/benchmark.py --save-as-baseline --feature "fx"  # fijar baseline.json
-python bench/test_tiny.py                                    # ejemplo pequeño (smoke test)
+python backend/bench/benchmark.py                                    # todas las referencias
+python backend/bench/benchmark.py --repo-ids repo-juice-sample       # solo un subconjunto
+python backend/bench/benchmark.py --save-as-baseline --feature "fx"  # fijar baseline.json
+python backend/bench/test_tiny.py                                    # ejemplo pequeño (smoke test)
 ```
 
 ### Pruebas
 
-Suite autónoma (unittest, sin dependencias nuevas) con un ejemplo pequeño:
+Para correr la suite completa (pruebas unitarias, análisis, CORS, contrato OpenAPI y paridad):
 
 ```bash
-python -m unittest discover -s tests -v
+.venv/bin/pytest backend/tests/ -v
 ```
 
 ---
