@@ -1,0 +1,51 @@
+id: "23"
+nombre: "Desactivación de métodos HTTP inseguros (TRACE/TRACK)"
+referencia: "OWASP A05:2021 Configuración de Seguridad Incorrecta"
+categoria_owasp: "OWASP A05:2021 Configuración de Seguridad Incorrecta"
+criticidad_referencia: "MEDIO"
+familia: "Configuración y exposición"
+dónde buscar:
+  - "**/nginx.conf"
+  - "**/server.py"
+  - "**/main.py"
+  - "**/app.js"
+  - "**/httpd.conf"
+donde_buscar:
+  - "**/nginx.conf"
+  - "**/server.py"
+  - "**/main.py"
+  - "**/app.js"
+  - "**/httpd.conf"
+señales de incumplimiento:
+  - "Métodos HTTP TRACE o TRACK habilitados en el servidor web o framework"
+  - "Servidor web responde 200 OK reflejando cabeceras a peticiones con verbo TRACE"
+  - "Configuración sin directivas de limitación de métodos (e.g., TraceEnable On)"
+senales_incumplimiento:
+  - "Métodos HTTP TRACE o TRACK habilitados en el servidor web o framework"
+  - "Servidor web responde 200 OK reflejando cabeceras a peticiones con verbo TRACE"
+  - "Configuración sin directivas de limitación de métodos (e.g., TraceEnable On)"
+falsos positivos conocidos:
+  - "Entornos de pruebas o depuración locales aislados sin acceso público ni datos confidenciales"
+falsos_positivos:
+  - "Entornos de pruebas o depuración locales aislados sin acceso público ni datos confidenciales"
+falsos_positivos_conocidos:
+  - "Entornos de pruebas o depuración locales aislados sin acceso público ni datos confidenciales"
+herramientas:
+  - "curl"
+  - "revision-manual"
+ia_revisa: "Verificar que el servidor web o API gateway desactive los métodos HTTP inseguros como TRACE o TRACK para mitigar ataques XST (Cross-Site Tracing)."
+remediación:
+  - "Desactivar métodos TRACE y TRACK en el servidor web (e.g., 'TraceEnable off' en Apache HTTP Server)."
+  - "Configurar directivas 'limit_except' en Nginx rechazando métodos fuera de GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD con código 405."
+remediacion:
+  - "Desactivar métodos TRACE y TRACK en el servidor web (e.g., 'TraceEnable off' en Apache HTTP Server)."
+  - "Configurar directivas 'limit_except' en Nginx rechazando métodos fuera de GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD con código 405."
+verificación: "curl -s -X TRACE -i https://target.example.com/ (debe responder 405 Method Not Allowed o 403 Forbidden, nunca 200 reflejando cabeceras)."
+verificacion: "curl -s -X TRACE -i https://target.example.com/ (debe responder 405 Method Not Allowed o 403 Forbidden, nunca 200 reflejando cabeceras)."
+criterio_aceptacion: "El endpoint responde con código 405 o 403 ante peticiones con método TRACE y no refleja las cabeceras HTTP."
+método: "en_vivo"
+metodo: "en_vivo"
+fragmentos_regex:
+  - "TraceEnable\\s+[Oo]n"
+  - "TRACE"
+aplica_con_llm: false

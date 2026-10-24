@@ -72,7 +72,7 @@ def test_http_methods_match(openapi_spec):
     flask_route_methods = {}
     for rule in app.url_map.iter_rules():
         rule_str = str(rule.rule)
-        if rule_str.startswith("/api/"):
+        if rule_str.startswith("/api/") or rule_str.startswith("/webhooks/"):
             normalized = re.sub(r"<([^>]+)>", r"{\1}", rule_str)
             methods = {m.lower() for m in rule.methods if m not in ("HEAD", "OPTIONS")}
             flask_route_methods[normalized] = methods

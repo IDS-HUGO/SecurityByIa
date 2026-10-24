@@ -1,0 +1,36 @@
+id: "3"
+nombre: Mensajes de error sin información sensible
+categoria_owasp: A04 Diseño Inseguro (CWE-209)
+criticidad_referencia: CRITICO
+familia: Errores y registro
+metodo: repo
+donde_buscar:
+- '**/*.py'
+- '**/.env*'
+- '**/*.tf'
+senales_incumplimiento:
+- DEBUG = True en producción
+- respuestas 500 con traceback, nombres de tablas o rutas internas
+- headers Server o X-Powered-By con versión
+falsos_positivos:
+- Modo debug activo solo en desarrollo o pruebas (no en producción).
+- Detalle del error completo enviado únicamente a logs internos, con mensaje genérico al cliente.
+- Header Server/X-Powered-By removido o sin versión en el proxy, no expuesto por la app.
+herramientas:
+- revision-manual
+ia_revisa: Que las respuestas de error en producción no expongan stack traces, rutas de archivos, versiones, consultas ni
+  detalles de configuración, juzgando DEBUG en producción, respuestas 500 con traceback, nombres de tablas o rutas internas,
+  y headers Server o X-Powered-By con versión.
+remediacion:
+- Implementar manejador global de excepciones.
+- Devolver mensajes genéricos en producción con ID de correlación.
+- Enviar detalle solo a logs internos.
+- Desactivar modo debug y ocultar versiones en headers.
+verificacion: 'Forzar errores (input malformado, payload enorme, tipo incorrecto): respuestas 500 devuelven mensaje genérico
+  sin stack trace.'
+criterio_aceptacion: Las respuestas 500 forzadas devuelven mensaje genérico sin stack trace.
+fragmentos_regex:
+- 'DEBUG\s*=\s*True'
+- traceback
+- X-Powered-By
+aplica_con_llm: false

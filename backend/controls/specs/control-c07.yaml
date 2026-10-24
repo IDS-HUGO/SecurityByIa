@@ -1,0 +1,33 @@
+id: "C7"
+nombre: Datos sensibles en logs y trazas
+categoria_owasp: 'Ref: A09'
+criticidad_referencia: COMPLEMENTARIO
+familia: Errores y registro
+metodo: repo
+donde_buscar:
+- '**/*.py'
+- '**/*.js'
+- '**/*.ts'
+senales_incumplimiento:
+- Tokens, contraseñas, PII o prompts confidenciales registrados en logs y trazas
+- SDKs de monitoreo de errores sin scrubbing de datos sensibles
+falsos_positivos:
+- Valores redactados o enmascarados antes de registrarlos (scrubbing activo en el SDK de monitoreo).
+- Identificadores no sensibles (IDs sin PII) registrados en logs.
+herramientas:
+- revision-manual
+- sentry
+ia_revisa: Que no se registren tokens, contraseñas, PII ni prompts confidenciales en logs y trazas, incluyendo el scrubbing
+  de los SDKs de monitoreo de errores.
+remediacion:
+- Eliminar de logs y trazas tokens, contraseñas, PII y prompts confidenciales.
+- Configurar scrubbing en los SDKs de monitoreo de errores.
+verificacion: Buscar patrones sensibles en logs; confirmar scrubbing en Sentry/monitoreo.
+criterio_aceptacion: Los patrones sensibles no aparecen en logs y el scrubbing de Sentry/monitoreo está confirmado.
+fragmentos_regex:
+- '(?i)\b(password|passwd|contraseña)\b'
+- '(?i)\btoken\b'
+- '(?i)\bpii\b'
+- '(?i)scrub'
+- '(?i)sentry'
+aplica_con_llm: false

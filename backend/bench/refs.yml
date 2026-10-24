@@ -44,3 +44,10 @@ repositories:
     type: "api-security"
     format: "vuln-markers"
     description: "Servicio API (CWE-798 API Key, CWE-327 Weak Hash MD5, CWE-89 SQLi, CWE-94 Code Injection Eval)"
+
+  - id: "repo-controles-violaciones"
+    url: "bench/examples/controls-bench"
+    name: "Controles Inventario v1.0 (violaciones inyectadas)"
+    type: "synthetic"
+    format: "vuln-markers"
+    description: "13 violaciones conocidas del inventario de controles v1.0 (CWE-942 CORS, CWE-89 SQLi, CWE-489 DEBUG, CWE-770 rate limit y LLM, CWE-1004 cookies, CWE-613 JWT, CWE-918 SSRF, CWE-532 logs) más casos seguros gemelos para medir FPR"

@@ -1,0 +1,35 @@
+id: "17"
+nombre: Fallos de control de acceso registrados con contexto suficiente
+categoria_owasp: A09
+criticidad_referencia: MEDIO
+familia: Errores y registro
+metodo: repo
+donde_buscar:
+- '**/*logging*'
+- '**/*logger*'
+- '**/*.tf'
+senales_incumplimiento:
+- Logs sin IP, user-agent, userID o correlation ID
+- DB sin exportar logs a CloudWatch
+falsos_positivos:
+- Registro sin userID en endpoints pre-autenticación (login/health), donde aún no existe identidad disponible.
+- Logs de DB ya exportados a CloudWatch vía parámetros del clúster (control cumplido).
+herramientas:
+- revision-manual
+- checkov
+ia_revisa: Que los logs de seguridad tengan contexto suficiente para investigar incidentes y que la DB exporte sus logs, juzgando
+  la presencia de IP, user-agent, userID o correlation ID en los logs y la exportación de logs de la base de datos a CloudWatch.
+remediacion:
+- Enriquecer logs con IP, user-agent, userID.
+- Correlation IDs entre servicios.
+- Retención de logs.
+- 'Exportar logs DB (Aurora PostgreSQL: ["postgresql"] con pgaudit).'
+verificacion: Logs incluyen timestamp, IP, userID, acción, recurso y resultado. Logs de DB visibles en CloudWatch.
+criterio_aceptacion: Logs incluyen timestamp, IP, userID, acción, recurso y resultado. Logs de DB visibles en CloudWatch.
+fragmentos_regex:
+- '(?i)user[_ -]?agent'
+- 'userID|user_id'
+- '(?i)correlation'
+- '(?i)cloudwatch'
+- 'pgaudit'
+aplica_con_llm: false

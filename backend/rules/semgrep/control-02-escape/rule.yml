@@ -1,0 +1,90 @@
+rules:
+  # Control 2: Escape de caracteres especiales con la sintaxis del intérprete (inventario v1.0)
+  - id: js-react-raw-html-ctl2
+    languages: [javascript]
+    message: "Control 2 (MEDIO): HTML crudo con dangerouslySetInnerHTML sin sanitizar (DOMPurify) permite XSS con datos del usuario."
+    severity: WARNING
+    metadata:
+      control: "2"
+      inventory: "inventario-controles-v1.0"
+      owasp: "A03:2021 - Injection"
+      cwe: ["CWE-79"]
+      criticidad: "MEDIO"
+    patterns:
+      - pattern-either:
+          - pattern: '<$TAG ... dangerouslySetInnerHTML={{ __html: $X }} ... />'
+          - pattern: '<$TAG ... dangerouslySetInnerHTML={{ __html: $X }} ...> ... </$TAG>'
+
+  - id: generic-vue-v-html-ctl2
+    languages: [generic]
+    message: "Control 2 (MEDIO): v-html renderiza HTML crudo; sanitizá con DOMPurify antes de asignarlo."
+    severity: WARNING
+    metadata:
+      control: "2"
+      inventory: "inventario-controles-v1.0"
+      owasp: "A03:2021 - Injection"
+      cwe: ["CWE-79"]
+      criticidad: "MEDIO"
+    pattern: 'v-html='
+
+  - id: js-angular-bypass-trust-ctl2
+    languages: [javascript]
+    message: "Control 2 (MEDIO): bypassSecurityTrust* marca contenido como confiable y desactiva la sanitización de Angular."
+    severity: WARNING
+    metadata:
+      control: "2"
+      inventory: "inventario-controles-v1.0"
+      owasp: "A03:2021 - Injection"
+      cwe: ["CWE-79"]
+      criticidad: "MEDIO"
+    pattern-either:
+      - pattern: $SAN.bypassSecurityTrustHtml($X)
+      - pattern: $SAN.bypassSecurityTrustScript($X)
+      - pattern: $SAN.bypassSecurityTrustUrl($X)
+
+  - id: py-sql-concat-ctl2
+    languages: [python]
+    message: "Control 2 (MEDIO): consulta SQL construida por concatenación, f-string o % con datos variables; usá consultas parametrizadas u ORM."
+    severity: ERROR
+    metadata:
+      control: "2"
+      inventory: "inventario-controles-v1.0"
+      owasp: "A03:2021 - Injection"
+      cwe: ["CWE-89"]
+      criticidad: "MEDIO"
+    pattern-either:
+      - pattern: $CUR.execute(f"...{$X}...")
+      - pattern: $CUR.execute("..." + $X + ...)
+      - pattern: $CUR.execute("..." % $X, ...)
+      - pattern: $SESSION.execute(text(f"...{$X}..."))
+
+  - id: js-sql-template-ctl2
+    languages: [javascript]
+    message: "Control 2 (MEDIO): consulta SQL con template literal interpolado; usá consultas parametrizadas."
+    severity: ERROR
+    metadata:
+      control: "2"
+      inventory: "inventario-controles-v1.0"
+      owasp: "A03:2021 - Injection"
+      cwe: ["CWE-89"]
+      criticidad: "MEDIO"
+    pattern-either:
+      - pattern: $DB.query(`...${$X}...`, ...)
+      - pattern: $DB.execute(`...${$X}...`, ...)
+
+  - id: py-html-response-var-ctl2
+    languages: [python]
+    message: "Control 2 (MEDIO): HTMLResponse construida con f-string interpola datos sin escapar; sanitizá el contenido antes de renderizarlo."
+    severity: WARNING
+    metadata:
+      control: "2"
+      inventory: "inventario-controles-v1.0"
+      owasp: "A03:2021 - Injection"
+      cwe: ["CWE-79"]
+      criticidad: "MEDIO"
+    pattern: HTMLResponse(f"...{$X}...")
+
+  # no-semgrep: "html: true en modales" depende del componente/modal del framework y
+  # no es expresable con precisión sin inventar señales; lo cubre la revisión con IA (spec del control 2).
+  # no-semgrep: "CSP con 'unsafe-inline'" vive en configuración/headers, no en código ejecutable;
+  # el middleware de headers (control 16) y la revisión con IA lo cubren.

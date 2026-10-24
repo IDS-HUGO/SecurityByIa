@@ -1,0 +1,46 @@
+rules:
+  # Control 7: Rate limiting en los endpoints de API (inventario v1.0)
+  # Señal: endpoints costosos (login, IA, exportaciones, correos, PDF) sin límite de tasa.
+  - id: py-route-without-ratelimit-ctl7
+    languages: [python]
+    message: "Control 7 (ALTO): endpoint costoso sin decorador/dependencia de rate limiting; agregá límites por IP y por usuario según el costo del endpoint."
+    severity: ERROR
+    metadata:
+      control: "7"
+      inventory: "inventario-controles-v1.0"
+      owasp: "A04:2021 - Insecure Design / API4:2023"
+      cwe: ["CWE-770"]
+      criticidad: "ALTO"
+    patterns:
+      - pattern-either:
+          - pattern: |
+              @$APP.post(...)
+              def $F(...):
+                  ...
+          - pattern: |
+              @$APP.route(...)
+              def $F(...):
+                  ...
+          - pattern: |
+              @$ROUTER.post(...)
+              def $F(...):
+                  ...
+          - pattern: |
+              @$ROUTER.get(...)
+              def $F(...):
+                  ...
+      - metavariable-regex:
+          metavariable: $F
+          regex: "(?i).*(login|signin|auth|llm|chat|completion|generate|export|mail|email|pdf|report|upload).*"
+      - pattern-not: |
+          @$ANY.limit(...)
+          def $F(...):
+              ...
+      - pattern-not: |
+          @$ANY.rate_limit(...)
+          def $F(...):
+              ...
+
+  # no-semgrep (JS/Express): "endpoint sin middleware de rate limit" es una señal de omisión
+  # en una cadena de middlewares arbitrariamente larga; Semgrep no la expresa sin alto ruido.
+  # La cubre la revisión con IA (spec del control 7) y la verificación 429 + headers X-RateLimit-*.

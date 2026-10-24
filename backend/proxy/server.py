@@ -21,6 +21,7 @@ import hmac
 import json
 import os
 import re
+import subprocess
 import threading
 import time
 import urllib.error
@@ -38,6 +39,29 @@ AUDIT_FILE = Path(os.environ.get(
     "PROXY_AUDIT_FILE", str(ROOT / "storage" / "proxy_audit.jsonl")))
 RATE_LIMIT_WINDOW_SECONDS = 60
 UPSTREAM_TIMEOUT = 60
+
+# Lista permitida de comandos de solo lectura para el modo nube
+ALLOWED_CLOUD_COMMAND_PREFIXES = (
+    "aws rds describe-db-clusters",
+    "aws rds describe-db-instances",
+    "aws s3api get-bucket-policy-status",
+    "aws s3api get-public-access-block",
+    "aws s3api get-bucket-acl",
+    "aws s3api get-bucket-lifecycle-configuration",
+    "aws elbv2 describe-listeners",
+    "aws elbv2 describe-load-balancers",
+    "aws elb describe-load-balancers",
+    "aws cloudtrail describe-trails",
+    "aws cloudtrail get-trail-status",
+    "aws backup describe-backup-vault",
+    "aws backup list-recovery-points-by-backup-vault",
+)
+
+DISALLOWED_CLOUD_WORDS = (
+    "delete", "put", "create", "update", "modify", "terminate", "stop",
+    "start", "reboot", "attach", "detach", "authorize", "revoke", "set-",
+    "add", "remove", "restore", "copy", "import", "export", "run-", "apply",
+)
 
 app = Flask(__name__)
 
@@ -208,6 +232,7 @@ def status_snapshot() -> Dict[str, Any]:
 app = Flask(__name__)
 
 
+@app.get("/")
 @app.get("/healthz")
 def healthz():
     return jsonify({"status": "ok", "providers": sorted(PROVIDERS.keys())})
@@ -272,6 +297,111 @@ def forward(provider: str, subpath: str):
     _audit(token_id, provider, route, status_code, "allowed", elapsed())
     return app.response_class(_redact_text(raw_body, secret=secret),
                               status=status_code, mimetype="application/json")
+
+
+def is_cloud_command_allowed(command: Any) -> tuple[bool, str]:
+    """Verifica si un comando o lista de argumentos coincide con la lista permitida de describe/get."""
+    if isinstance(command, list):
+        cmd_str = " ".join(str(c) for c in command).strip()
+    else:
+        cmd_str = str(command or "").strip()
+
+    cmd_lower = cmd_str.lower()
+    # No permitir comandos vacíos
+    if not cmd_lower:
+        return False, "Comando vacío."
+
+    # Debe iniciar con un prefijo permitido
+    starts_with_allowed = any(cmd_lower.startswith(prefix) for prefix in ALLOWED_CLOUD_COMMAND_PREFIXES)
+    if not starts_with_allowed:
+        return False, "Comando no permitido: el modo nube solo acepta comandos describe y get de la lista permitida."
+
+    # No debe contener subcomandos ni flags de mutación
+    tokens = cmd_lower.split()
+    for word in DISALLOWED_CLOUD_WORDS:
+        for token in tokens:
+            if token == word or token == f"--{word}" or token.startswith(f"--{word}="):
+                return False, f"Parámetro o subcomando peligroso no permitido: {word}"
+
+    return True, cmd_str
+
+
+@app.post("/cloud/execute")
+def execute_cloud_command():
+    started = time.monotonic()
+    route = "cloud/execute"
+
+    def elapsed() -> int:
+        return int((time.monotonic() - started) * 1000)
+
+    token_record = _authenticate(request.headers.get("Authorization", ""))
+    if token_record is None:
+        _audit(None, "cloud", route, 401, "denied:invalid-token", elapsed())
+        return jsonify({"error": "Token de proxy inválido."}), 401
+    token_id = str(token_record.get("id", "unknown"))
+
+    # Validar scope de proveedor si el token declara lista de proveedores
+    providers = token_record.get("providers") or []
+    if providers and not any(p in providers for p in ("cloud", "aws", "gemini", "all")):
+        _audit(token_id, "cloud", route, 403, "denied:token-scope", elapsed())
+        return jsonify({"error": "El token no tiene permiso para ejecutar comandos en la nube."}), 403
+
+    if not _rate_limit_ok(token_id, int(token_record.get("rate_limit_per_minute", 30))):
+        _audit(token_id, "cloud", route, 429, "denied:rate-limit", elapsed())
+        return jsonify({"error": "Límite de tasa del token excedido."}), 429
+
+    payload = request.get_json(silent=True) or {}
+    command = payload.get("command")
+    if not command:
+        _audit(token_id, "cloud", route, 400, "denied:missing-command", elapsed())
+        return jsonify({"error": "Falta el comando a ejecutar."}), 400
+
+    allowed, clean_or_err = is_cloud_command_allowed(command)
+    if not allowed:
+        _audit(token_id, "cloud", route, 403, "denied:command-not-allowlisted", elapsed())
+        return jsonify({"error": clean_or_err}), 403
+
+    cmd_tokens = command if isinstance(command, list) else command.split()
+
+    # Inyección de credenciales de nube estrictamente en el entorno del proceso
+    env = os.environ.copy()
+    creds = payload.get("credentials") or {}
+    if creds.get("aws_access_key_id"):
+        env["AWS_ACCESS_KEY_ID"] = creds["aws_access_key_id"]
+    if creds.get("aws_secret_access_key"):
+        env["AWS_SECRET_ACCESS_KEY"] = creds["aws_secret_access_key"]
+    if creds.get("aws_session_token"):
+        env["AWS_SESSION_TOKEN"] = creds["aws_session_token"]
+    if creds.get("aws_default_region"):
+        env["AWS_DEFAULT_REGION"] = creds["aws_default_region"]
+
+    try:
+        proc = subprocess.run(cmd_tokens, capture_output=True, text=True, timeout=20, env=env)
+        stdout = _redact_text(proc.stdout)
+        stderr = _redact_text(proc.stderr)
+        exit_code = proc.returncode
+    except FileNotFoundError:
+        stdout = ""
+        stderr = "aws cli no se encuentra instalado en el host del proxy"
+        exit_code = 127
+    except subprocess.TimeoutExpired:
+        stdout = ""
+        stderr = "Tiempo de espera agotado al ejecutar comando de nube"
+        exit_code = 124
+    except Exception as exc:
+        stdout = ""
+        stderr = _redact_text(str(exc))
+        exit_code = 1
+
+    _audit(token_id, "cloud", route, 200 if exit_code == 0 else 502,
+           "allowed" if exit_code == 0 else "allowed:error", elapsed())
+    return jsonify({
+        "status": "ok" if exit_code == 0 else "error",
+        "command": clean_or_err,
+        "stdout": stdout,
+        "stderr": stderr,
+        "exit_code": exit_code,
+    }), (200 if exit_code == 0 else 200)
 
 
 def main() -> None:

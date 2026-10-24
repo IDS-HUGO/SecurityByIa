@@ -1,0 +1,5 @@
+DEBUG = True
+TEMPLATE_DEBUG = DEBUG
+
+# Caso seguro
+DEBUG_FINAL = False

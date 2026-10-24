@@ -1,0 +1,28 @@
+id: "C8"
+nombre: Protección perimetral (WAF/DDoS)
+categoria_owasp: 'Ref: A05'
+criticidad_referencia: COMPLEMENTARIO
+familia: API y borde
+metodo: nube
+donde_buscar:
+- '**/*.tf'
+senales_incumplimiento:
+- WAF ausente o sin reglas administradas
+- Rate limiting no asociado al balanceador o CDN
+falsos_positivos:
+- WAF asociado al CDN que está frente al balanceador (protección perimetral equivalente).
+- Reglas administradas gestionadas fuera del módulo IaC revisado.
+herramientas:
+- revision-manual
+- aws-cli
+ia_revisa: Que exista WAF con reglas administradas y rate limiting asociado al balanceador o CDN.
+remediacion:
+- Asociar WAF con reglas administradas y rate limiting al balanceador o CDN.
+verificacion: Revisar asociación de WAF y reglas activas.
+criterio_aceptacion: El WAF está asociado al balanceador/CDN con reglas administradas activas.
+fragmentos_regex:
+- '(?i)\bwaf\b'
+- 'aws_waf'
+- '(?i)managed[_ -]?rule'
+- 'aws_lb|aws_cloudfront'
+aplica_con_llm: false

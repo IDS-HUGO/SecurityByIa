@@ -1,0 +1,36 @@
+id: "C1"
+nombre: Autenticación robusta y MFA
+categoria_owasp: 'Ref: A07'
+criticidad_referencia: COMPLEMENTARIO
+familia: Acceso y autenticación
+metodo: nube
+donde_buscar:
+- '**/*.tf'
+- '**/*.yaml'
+- '**/*.yml'
+senales_incumplimiento:
+- Sin MFA para administradores
+- Sin política de contraseñas definida
+- Sin bloqueo por intentos fallidos
+- Recuperación de cuentas insegura
+- Configuración del IdP sin endurecer
+falsos_positivos:
+- Usuarios no administradores sin MFA (el control exige MFA para administradores).
+- Bloqueo por intentos gestionado en el IdP externo, no visible en el repositorio.
+herramientas:
+- revision-manual
+ia_revisa: Que la autenticación sea robusta, juzgando si falta MFA para administradores, política de contraseñas, bloqueo
+  por intentos fallidos, recuperación segura y configuración endurecida del IdP.
+remediacion:
+- Habilitar MFA para administradores.
+- Definir política de contraseñas y bloqueo por intentos fallidos.
+- Endurecer la configuración del IdP y la recuperación segura de cuentas.
+verificacion: Configuración de IdP; prueba de fuerza bruta controlada para verificar bloqueo.
+criterio_aceptacion: La prueba de fuerza bruta controlada verifica el bloqueo y la configuración del IdP refleja MFA de administradores,
+  política de contraseñas y recuperación segura.
+fragmentos_regex:
+- '(?i)\bmfa\b'
+- '(?i)password[_ -]?policy'
+- '(?i)lockout|bloqueo'
+- '(?i)\bidp\b'
+aplica_con_llm: false

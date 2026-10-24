@@ -1,0 +1,43 @@
+id: "2"
+nombre: Escape de caracteres especiales con la sintaxis del intérprete
+categoria_owasp: A03 Inyección
+criticidad_referencia: MEDIO
+familia: Validación e inyección
+metodo: repo
+donde_buscar:
+- '**/*.jsx'
+- '**/*.tsx'
+- '**/*.vue'
+- '**/*.html'
+- '**/*.py'
+senales_incumplimiento:
+- 'dangerouslySetInnerHTML o html: true con texto de usuario sin sanitizar'
+- campos de formulario interpolados en HTML de correo
+- SQL por concatenación o f-strings
+- CSP con 'unsafe-inline' en script-src
+falsos_positivos:
+- HTML renderizado con contenido estático o confiable, sin datos del usuario.
+- Salida sanitizada previamente con DOMPurify antes de renderizar.
+- Consultas construidas con ORM o parámetros vinculados, sin concatenación real.
+herramientas:
+- semgrep
+- revision-manual
+ia_revisa: Que los datos del usuario no se inserten sin escapar en HTML, correos, consultas SQL u otros intérpretes, juzgando
+  renders de HTML crudo sin sanitizar, interpolación de campos en plantillas de correo, SQL por concatenación o f-strings
+  y una CSP con 'unsafe-inline' en script-src.
+remediacion:
+- Sanitizar con DOMPurify antes de renderizar HTML.
+- Escapar variables en plantillas de correo.
+- Usar ORM o consultas parametrizadas; validar entradas con Pydantic/Zod.
+- Endurecer CSP eliminando 'unsafe-inline'.
+verificacion: Pegar <img src=x onerror=alert(1)> en campos visibles (debe verse como texto); enviar <script>alert(1)</script>
+  en formularios de correo; revisar header Content-Security-Policy.
+criterio_aceptacion: El payload pegado en campos visibles se ve como texto; <script>alert(1)</script> enviado en formularios
+  de correo no se interpreta; header Content-Security-Policy revisado.
+fragmentos_regex:
+- dangerouslySetInnerHTML
+- v-html
+- bypassSecurityTrust
+- '''unsafe-inline'''
+- '(?i)f["'']\s*(SELECT|INSERT|UPDATE|DELETE)'
+aplica_con_llm: false

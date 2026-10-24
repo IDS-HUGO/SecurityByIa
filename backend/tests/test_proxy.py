@@ -32,7 +32,12 @@ TOKEN_B = "tok-demo-BBBB"
 
 class FakeUpstreamResponse:
     def __init__(self, body, status=200):
-        self._body = body.encode("utf-8") if isinstance(body, str) else body
+        if isinstance(body, str):
+            self._body = body.encode("utf-8")
+        elif isinstance(body, (bytes, bytearray)):
+            self._body = bytes(body)
+        else:
+            self._body = json.dumps(body).encode("utf-8")
         self.status = status
 
     def read(self):
@@ -61,6 +66,7 @@ def proxy_env(tmp_path, monkeypatch):
     audit_file = tmp_path / "audit" / "proxy_audit.jsonl"
     monkeypatch.setattr(proxy_server, "PROXY_TOKENS_FILE", str(tokens_file))
     monkeypatch.setattr(proxy_server, "AUDIT_FILE", audit_file)
+    monkeypatch.setattr(proxy_server, "_rate_hits", {})  # estado entre tests no contamina
     monkeypatch.setenv("GEMINI_API_KEY", SECRET)
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
@@ -192,7 +198,8 @@ def test_healthz_lists_whitelist():
 # Rotación de tokens
 # ---------------------------------------------------------------------------
 
-def test_token_rotation(proxy_env):
+def test_token_rotation(proxy_env, monkeypatch):
+    stub_upstream(monkeypatch, body={"ok": True})
     client = proxy_server.app.test_client()
     assert post(client, "/gemini/models/gemini-1.5-flash:generateContent").status_code in (200, 502)
 

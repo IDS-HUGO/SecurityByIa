@@ -1,0 +1,33 @@
+id: "7"
+nombre: Rate limiting en los endpoints de API
+categoria_owasp: A04 Diseño Inseguro / API4:2023
+criticidad_referencia: ALTO
+familia: API y borde
+metodo: repo
+donde_buscar:
+- '**/*middleware*'
+- '**/routes/**'
+- '**/routers/**'
+- '**/*.tf'
+senales_incumplimiento:
+- Límite solo global o faltante en endpoints costosos (LLMs, PDF)
+- sin respuesta 429 ni headers de límite
+falsos_positivos:
+- Rate limiting equivalente aplicado en el WAF o API Gateway frente a la aplicación.
+- Endpoints internos o de salud sin límite explícito por no estar expuestos al usuario final.
+herramientas:
+- revision-manual
+ia_revisa: Que los endpoints críticos (login, IA, exportaciones, envío de correos) tengan límites de tasa por IP y por usuario,
+  juzgando si el límite es solo global o falta en endpoints costosos (LLMs, PDF) y si faltan respuestas 429 o headers de límite.
+remediacion:
+- Rate limiting por IP y por usuario.
+- Límites específicos por endpoint según su costo.
+- Headers X-RateLimit-* y Retry-After en respuestas.
+verificacion: Endpoint devuelve 429 al exceder límite y headers X-RateLimit-* presentes.
+criterio_aceptacion: Endpoint devuelve 429 al exceder límite y headers X-RateLimit-* presentes.
+fragmentos_regex:
+- '(?i)rate[_ -]?limit'
+- '(?i)x-ratelimit'
+- 'Retry-After'
+- '429'
+aplica_con_llm: false

@@ -23,7 +23,8 @@ import pytest
 import api_server
 import webhook_service
 from webhook_service import (claim_sha, comment_markdown, extract_pr_payload,
-                             filter_findings_to_files, verify_signature)
+                             filter_findings_to_files, recompute_summary,
+                             verify_signature)
 
 SECRET = "webhook-test-secret"
 
@@ -393,7 +394,8 @@ class TestCheckThreshold:
         known_critical = {"rule": "r-old", "file": "a.py", "line": 1, "severity": "critical"}
         new_high = {"rule": "r-new", "file": "b.py", "line": 2, "severity": "high"}
         previous = {webhook_service.finding_fingerprint(known_critical)}
-        _, new_findings = webhook_service.split_new_findings([known_critical, new_high], previous)
+        new_findings, _known = webhook_service.split_new_findings(
+            [known_critical, new_high], previous)
         output = webhook_service.build_check_output(
             [known_critical, new_high], new_findings=new_findings)
         assert output["conclusion"] == "neutral"

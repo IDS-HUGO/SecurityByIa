@@ -1,0 +1,29 @@
+id: "C13"
+nombre: Consumo sin límites de IA
+categoria_owasp: 'Ref: LLM10:2025'
+criticidad_referencia: COMPLEMENTARIO
+familia: IA (solo con LLM)
+metodo: repo
+donde_buscar:
+- '**/*.py'
+- '**/*.js'
+senales_incumplimiento:
+- Sin límite de tokens por request o por usuario
+- Sin presupuestos ni alertas de costo
+falsos_positivos:
+- Límites de tokens y presupuestos ya configurados (control cumplido).
+- Consumo de IA limitado a flujos internos no expuestos a usuarios finales.
+herramientas:
+- revision-manual
+ia_revisa: Que existan límites de tokens por request y por usuario, presupuestos y alertas de costo sobre el consumo de IA.
+remediacion:
+- Definir límites de tokens por request y por usuario.
+- Configurar presupuestos y alertas de costo.
+verificacion: Probar requests muy largos; verificar alertas de facturación.
+criterio_aceptacion: Los requests muy largos son rechazados por límite de tokens y las alertas de facturación están configuradas.
+fragmentos_regex:
+- '(?i)max[_ -]?tokens'
+- '(?i)budget|presupuesto'
+- '(?i)billing|facturaci'
+aplica_con_llm: true
+justificacion_no_aplica: El repositorio no usa un SDK de modelos de lenguaje (sin dependencias de LLM detectadas en manifiestos).

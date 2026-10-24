@@ -1,0 +1,52 @@
+rules:
+  # Control 10: Session IDs almacenados en cookies seguras (inventario v1.0)
+  - id: py-cookie-insecure-flags-ctl10
+    languages: [python]
+    message: "Control 10 (ALTO): cookie de sesión con flag de seguridad desactivado (secure=False / httponly=False / samesite='None'); usá Secure, HttpOnly y SameSite Strict o Lax."
+    severity: ERROR
+    metadata:
+      control: "10"
+      inventory: "inventario-controles-v1.0"
+      owasp: "A07:2021 - Identification and Authentication Failures"
+      cwe: ["CWE-1004"]
+      criticidad: "ALTO"
+    pattern-either:
+      - pattern: $RESP.set_cookie(..., secure=False, ...)
+      - pattern: $RESP.set_cookie(..., httponly=False, ...)
+      - pattern: $RESP.set_cookie(..., samesite="None", ...)
+
+  - id: js-localstorage-token-ctl10
+    languages: [javascript]
+    message: "Control 10 (ALTO): token de sesión guardado en localStorage (accesible por XSS); usá cookies con Secure, HttpOnly y SameSite."
+    severity: ERROR
+    metadata:
+      control: "10"
+      inventory: "inventario-controles-v1.0"
+      owasp: "A07:2021 - Identification and Authentication Failures"
+      cwe: ["CWE-522"]
+      criticidad: "ALTO"
+    patterns:
+      - pattern: localStorage.setItem($KEY, $VAL)
+      - metavariable-regex:
+          metavariable: $KEY
+          regex: "(?i)['\"].*(token|jwt|session|auth).*['\"]"
+
+  - id: js-document-cookie-session-ctl10
+    languages: [javascript]
+    message: "Control 10 (ALTO): cookie de sesión escrita con document.cookie sin control de flags; manejá la sesión desde el backend con Secure/HttpOnly/SameSite."
+    severity: WARNING
+    metadata:
+      control: "10"
+      inventory: "inventario-controles-v1.0"
+      owasp: "A07:2021 - Identification and Authentication Failures"
+      cwe: ["CWE-1004"]
+      criticidad: "ALTO"
+    patterns:
+      - pattern: document.cookie = $VAL
+      - metavariable-regex:
+          metavariable: $VAL
+          regex: "(?i)['\"].*(token|session|jwt).*['\"]"
+
+  # no-semgrep: "falta Secure/HttpOnly/SameSite" (ausencia de kwargs en set_cookie / Set-Cookie)
+  # y "dominio/ruta más amplio de lo necesario" no son expresables sin alto ruido de falsos
+  # positivos; los cubre la revisión con IA y la inspección de Set-Cookie (spec del control 10).

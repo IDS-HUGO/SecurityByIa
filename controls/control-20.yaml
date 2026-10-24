@@ -1,0 +1,39 @@
+id: "20"
+nombre: Seguridad de la cadena de CI/CD e integridad de pipelines
+categoria_owasp: A08
+criticidad_referencia: MEDIO
+familia: CI/CD e integridad
+metodo: repo
+donde_buscar:
+- '**/.github/workflows/*.yml'
+- '**/.github/workflows/*.yaml'
+- '**/Dockerfile*'
+senales_incumplimiento:
+- actions/checkout con persist-credentials por defecto
+- permissions amplios o ausentes
+- acciones referenciadas por tag mutable (@v2) en vez de SHA
+- instaladores por curl | sh sin checksum
+falsos_positivos:
+- Acción referenciada por SHA (el tag solo aparece en comentario, no en la referencia real).
+- 'curl | sh con checksum verificado o instalador firmado.'
+- Workflow de prueba o descartado ya eliminado (sin workflows huérfanos).
+herramientas:
+- zizmor
+- semgrep
+ia_revisa: Que workflows y build no expongan credenciales, no usen permisos excesivos ni ejecuten artefactos sin verificar,
+  juzgando persist-credentials por defecto en checkout, permissions amplios o ausentes, acciones por tag mutable en vez de
+  SHA e instaladores por curl | sh sin checksum.
+remediacion:
+- 'persist-credentials: false en checkout.'
+- Mínimo privilegio en permissions por job (contents: read).
+- Fijar acciones por SHA.
+- Verificar checksums de instaladores.
+- Eliminar workflows huérfanos.
+verificacion: 0 hallazgos A08 en workflows; Dockerfiles sin curl | sh sin verificación.
+criterio_aceptacion: 0 hallazgos A08 en workflows; Dockerfiles sin curl | sh sin verificación.
+fragmentos_regex:
+- 'persist-credentials'
+- '(?i)permissions'
+- '@v[0-9]+'
+- 'curl\s*\|\s*sh'
+aplica_con_llm: false

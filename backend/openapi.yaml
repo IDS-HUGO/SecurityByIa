@@ -80,6 +80,186 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/analysis/{analysis_id}/report.md:
+    get:
+      summary: Reporte técnico en Markdown (F9)
+      description: >
+        Reporte enriquecido con SHA del commit, fecha, hallazgos por severidad,
+        estado de remediación (F6), explicación de cada hallazgo y guía de buenas
+        prácticas generada por el agente redactor determinista (solo datos reales,
+        con datos faltantes declarados).
+      operationId: getAnalysisReportMarkdown
+      parameters:
+        - name: analysis_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Reporte en Markdown
+          content:
+            text/markdown:
+              schema:
+                type: string
+        '404':
+          description: Análisis no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/analysis/{analysis_id}/report.sarif:
+    get:
+      summary: Exportación SARIF 2.1.0 (F9)
+      description: >
+        Exporta los hallazgos del análisis a SARIF 2.1.0: level mapeado desde la
+        severidad (critical/high=error, medium=warning, low=note), huella
+        parcial regla+archivo+línea y estado de remediación por resultado.
+      operationId: getAnalysisReportSarif
+      parameters:
+        - name: analysis_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Documento SARIF 2.1.0
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [version, runs]
+                properties:
+                  $schema:
+                    type: string
+                  version:
+                    type: string
+                    enum: [2.1.0]
+                  runs:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        tool:
+                          type: object
+                        invocations:
+                          type: array
+                          items:
+                            type: object
+                        properties:
+                          type: object
+                        results:
+                          type: array
+                          items:
+                            type: object
+        '404':
+          description: Análisis no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/analysis/{analysis_id}/executive-summary:
+    get:
+      summary: Resumen ejecutivo de una página (F9)
+      description: >
+        Datos para la vista imprimible del dashboard: repositorio con SHA y rama,
+        conteos por severidad, estado de remediación, hallazgos principales con
+        explicación del redactor, guía de buenas prácticas y datos faltantes.
+      operationId: getAnalysisExecutiveSummary
+      parameters:
+        - name: analysis_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Resumen ejecutivo
+          content:
+            application/json:
+              schema:
+                type: object
+        '404':
+          description: Análisis no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/analyses/compare:
+    get:
+      summary: Comparar dos análisis del mismo repositorio (F9)
+      description: >
+        Clasifica hallazgos como nuevos, corregidos y persistentes entre dos
+        análisis usando la huella regla+archivo+línea. Rechaza con 400 si
+        faltan parámetros o los análisis son de repositorios distintos.
+      operationId: compareAnalyses
+      parameters:
+        - name: base
+          in: query
+          required: true
+          description: analysis_id del análisis anterior (base)
+          schema:
+            type: string
+        - name: target
+          in: query
+          required: true
+          description: analysis_id del análisis actual (target)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Comparación de los dos análisis
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  repository:
+                    type: string
+                  base:
+                    type: object
+                  target:
+                    type: object
+                  new:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Finding'
+                  fixed:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Finding'
+                  persistent:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Finding'
+                  counts:
+                    type: object
+                    properties:
+                      new:
+                        type: integer
+                      fixed:
+                        type: integer
+                      persistent:
+                        type: integer
+                  note:
+                    type: string
+        '400':
+          description: Parámetros faltantes o repositorios distintos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Análisis no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/analyses:
     get:
       summary: Listar historial de análisis persistidos
@@ -692,6 +872,225 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '503':
           description: Webhook no configurado (falta GITHUB_WEBHOOK_SECRET)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/controls:
+    get:
+      summary: Lista de controles de seguridad (F10)
+      description: Retorna las especificaciones completas de los 35 controles del Inventario v1.0.
+      operationId: listControls
+      responses:
+        '200':
+          description: Lista de controles cargada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                  controls:
+                    type: array
+                    items:
+                      type: object
+
+  /api/analysis/{analysis_id}/controls:
+    get:
+      summary: Revisión por control del análisis (F10)
+      description: Retorna la evaluación de los 35 controles de seguridad para un análisis determinado.
+      operationId: getAnalysisControls
+      parameters:
+        - name: analysis_id
+          in: path
+          required: true
+          description: Identificador UUID del análisis
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Revisión por control obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  analysis_id:
+                    type: string
+                  controls_review:
+                    type: object
+        '404':
+          description: Análisis no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/analysis/{analysis_id}/controls/review:
+    post:
+      summary: Re-evaluar controles de seguridad del análisis (F10)
+      description: Ejecuta la re-evaluación de los controles para el análisis especificado.
+      operationId: reReviewControls
+      parameters:
+        - name: analysis_id
+          in: path
+          required: true
+          description: Identificador UUID del análisis
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Re-evaluación ejecutada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  analysis_id:
+                    type: string
+                  controls_review:
+                    type: object
+        '404':
+          description: Análisis no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/verificaciones/en-vivo:
+    post:
+      summary: Ejecutar verificaciones en vivo (F11)
+      description: Ejecuta verificadores de seguridad en modo HTTP o Nube con autorización obligatoria.
+      operationId: runLiveVerification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - autorizacion_confirmada
+                - target
+              properties:
+                modo:
+                  type: string
+                  enum: [http, nube]
+                  default: http
+                target:
+                  type: string
+                autorizacion_confirmada:
+                  type: boolean
+                controles:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Verificación ejecutada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  modo:
+                    type: string
+                  target:
+                    type: string
+                  results:
+                    type: array
+                    items:
+                      type: object
+        '400':
+          description: Falta autorización o datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/verificaciones/bitacora:
+    get:
+      summary: Bitácora de verificaciones en vivo (F11)
+      description: Retorna el historial de auditoría de verificaciones en vivo ejecutadas.
+      operationId: getVerificationAudit
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Bitácora obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                  entries:
+                    type: array
+                    items:
+                      type: object
+
+  /api/analysis/{analysis_id}/controls/{control_id}/evidencia:
+    post:
+      summary: Registrar ficha de evidencia manual para un control (F11)
+      description: Guarda ficha de evidencia para controles no automatizables (4, C1, C6, C9, C12).
+      operationId: saveControlEvidence
+      parameters:
+        - name: analysis_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: control_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - quien_sube
+              properties:
+                que_subir:
+                  type: string
+                quien_sube:
+                  type: string
+                fecha:
+                  type: string
+                notas:
+                  type: string
+                estado:
+                  type: string
+                  default: cumple
+      responses:
+        '200':
+          description: Ficha de evidencia registrada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Análisis no encontrado
           content:
             application/json:
               schema:

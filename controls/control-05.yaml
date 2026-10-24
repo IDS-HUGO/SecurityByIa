@@ -1,0 +1,48 @@
+id: "5"
+nombre: Sin claves ni secretos embebidos en código, configuración o pipelines
+categoria_owasp: A02
+criticidad_referencia: CRITICO
+familia: Secretos y criptografía
+metodo: repo
+donde_buscar:
+- '**/config.py'
+- '**/settings.py'
+- '**/.env'
+- '**/.env.production'
+- '**/alembic/env.py'
+- '**/.github/workflows/*.yml'
+- '**/*.tf'
+- '**/tests/**'
+senales_incumplimiento:
+- Credenciales reales como valor por defecto
+- .env trackeado
+- tokens Bearer/M2M en scripts de prueba
+- claves en commits anteriores
+falsos_positivos:
+- Tokens mockeados en fixtures de tests que no son credenciales reales (valores claramente ficticios o placeholders).
+- Referencias a gestores de secretos (Secrets Manager, SSM, Vault) sin valor embebido en el código.
+- '.env excluido de git por .gitignore, con solo variables interpoladas sin valores literales.'
+herramientas:
+- gitleaks
+- detect-secrets
+- trufflehog
+- revision-manual
+ia_revisa: Que no existan credenciales, API keys ni tokens embebidos en código, archivos de configuración, Dockerfiles, IaC
+  o pipelines (incluido el historial de git), juzgando credenciales reales como valor por defecto, .env trackeado y tokens
+  Bearer/M2M en scripts de prueba.
+remediacion:
+- Rotar/revocar secretos expuestos.
+- Migrar a gestor de secretos (AWS Secrets Manager, SSM, Vault).
+- Sacar .env de git (git rm --cached + .gitignore).
+- Mockear tokens en tests.
+- Reescribir historial git (git filter-repo/BFG).
+- Agregar detección de secretos en pre-commit y CI.
+verificacion: Escaneo confirma 0 secretos; claves rotadas figuran como revocadas; git log -S no recupera secretos.
+criterio_aceptacion: Escaneo confirma 0 secretos; claves rotadas figuran como revocadas; git log -S no recupera secretos.
+fragmentos_regex:
+- '(?i)(api[_-]?key|apikey)\s*[=:]'
+- '(?i)(secret|credential)\s*[=:]'
+- 'Bearer\s+[A-Za-z0-9._-]+'
+- '(?i)M2M'
+- '\.env\.production'
+aplica_con_llm: false

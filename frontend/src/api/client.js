@@ -63,6 +63,27 @@ export const api = {
       method: 'GET',
     }),
 
+  // Reports & exports endpoints (Feature 9)
+  getReportMarkdown: (analysisId) =>
+    request(`/api/analysis/${encodeURIComponent(analysisId)}/report.md`, {
+      method: 'GET',
+    }),
+
+  getReportSarif: (analysisId) =>
+    request(`/api/analysis/${encodeURIComponent(analysisId)}/report.sarif`, {
+      method: 'GET',
+    }),
+
+  getExecutiveSummary: (analysisId) =>
+    request(`/api/analysis/${encodeURIComponent(analysisId)}/executive-summary`, {
+      method: 'GET',
+    }),
+
+  compareAnalyses: (baseId, targetId) =>
+    request(`/api/analyses/compare?base=${encodeURIComponent(baseId)}&target=${encodeURIComponent(targetId)}`, {
+      method: 'GET',
+    }),
+
   // AI & Human Triage endpoints
   triageFinding: (analysisId, findingId, { decision, reason, author }) =>
     request(`/api/analysis/${encodeURIComponent(analysisId)}/finding/${encodeURIComponent(findingId)}/triage`, {
@@ -148,6 +169,40 @@ export const api = {
   getProxyAudit: (limit = 50) =>
     request(`/api/proxy/audit?limit=${encodeURIComponent(limit)}`, {
       method: 'GET',
+    }),
+
+  // Controls review endpoints (Feature 10)
+  listControls: () =>
+    request('/api/controls', {
+      method: 'GET',
+    }),
+
+  getAnalysisControls: (analysisId) =>
+    request(`/api/analysis/${encodeURIComponent(analysisId)}/controls`, {
+      method: 'GET',
+    }),
+
+  reReviewControls: (analysisId) =>
+    request(`/api/analysis/${encodeURIComponent(analysisId)}/controls/review`, {
+      method: 'POST',
+    }),
+
+  // Live verification and evidence endpoints (Feature 11)
+  runLiveVerification: (payload) =>
+    request('/api/verificaciones/en-vivo', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  getVerificationAudit: (limit = 50) =>
+    request(`/api/verificaciones/bitacora?limit=${encodeURIComponent(limit)}`, {
+      method: 'GET',
+    }),
+
+  saveControlEvidence: (analysisId, controlId, payload) =>
+    request(`/api/analysis/${encodeURIComponent(analysisId)}/controls/${encodeURIComponent(controlId)}/evidencia`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
     }),
 };
 

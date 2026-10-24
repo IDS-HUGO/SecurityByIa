@@ -1,0 +1,19 @@
+{
+  "vulnerabilities": [
+    {"name": "CORS comodín con credenciales (FastAPI)", "vuln_code_snippet": "api_cors.py", "vuln_line": 4, "cwe": "CWE-942"},
+    {"name": "CORS todos los orígenes (Django)", "vuln_code_snippet": "django_cors.py", "vuln_line": 2, "cwe": "CWE-942"},
+    {"name": "SQL por f-string (Control 2)", "vuln_code_snippet": "sql_concat.py", "vuln_line": 2, "cwe": "CWE-89"},
+    {"name": "DEBUG True en settings", "vuln_code_snippet": "config_debug.py", "vuln_line": 1, "cwe": "CWE-489"},
+    {"name": "Flask app.run(debug=True)", "vuln_code_snippet": "flask_debug.py", "vuln_line": 3, "cwe": "CWE-489"},
+    {"name": "Login sin rate limiting", "vuln_code_snippet": "ratelimit_login.py", "vuln_line": 6, "cwe": "CWE-770"},
+    {"name": "Chat IA sin rate limiting", "vuln_code_snippet": "ratelimit_login.py", "vuln_line": 11, "cwe": "CWE-770"},
+    {"name": "Cookie sin Secure", "vuln_code_snippet": "cookies_flags.py", "vuln_line": 2, "cwe": "CWE-1004"},
+    {"name": "JWT con expiración de días", "vuln_code_snippet": "jwt_emision.py", "vuln_line": 5, "cwe": "CWE-613"},
+    {"name": "SSRF a URL de usuario", "vuln_code_snippet": "ssrf_webhook.py", "vuln_line": 4, "cwe": "CWE-918"},
+    {"name": "Token de acceso en log", "vuln_code_snippet": "logs_sensibles.py", "vuln_line": 5, "cwe": "CWE-532"},
+    {"name": "LLM sin max_tokens", "vuln_code_snippet": "llm_consumo.py", "vuln_line": 5, "cwe": "CWE-770"},
+    {"name": "Token de sesión en localStorage", "vuln_code_snippet": "ui_session.js", "vuln_line": 2, "cwe": "CWE-522"},
+    {"name": "CORS credentials reflejo (Express)", "vuln_code_snippet": "app_express.js", "vuln_line": 2, "cwe": "CWE-942"},
+    {"name": "Sin configuración de Dependabot (control 6)", "vuln_code_snippet": ".github/dependabot.yml", "vuln_line": 0, "cwe": "CWE-1104"}
+  ]
+}

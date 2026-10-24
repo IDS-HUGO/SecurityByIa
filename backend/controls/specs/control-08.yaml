@@ -1,0 +1,42 @@
+id: "8"
+nombre: Segmentación de red, contenedores y permisos IAM
+categoria_owasp: A01/A05
+criticidad_referencia: CRITICO
+familia: Infraestructura y nube
+metodo: repo
+donde_buscar:
+- '**/*.tf'
+- '**/Dockerfile*'
+senales_incumplimiento:
+- SG de DB con ingress 0.0.0.0/0 en 5432/3306
+- egress 0.0.0.0/0 sin justificar
+- 'políticas IAM con Resource: "*" y acciones con comodín'
+- Dockerfile sin USER non-root
+falsos_positivos:
+- Ingress 0.0.0.0/0 solo en puertos web del balanceador (exposición pública intencional del borde), no en puertos de datos.
+- Recurso "*" en políticas administradas por el servicio AWS, no en políticas de identidad de usuarios.
+- Contenedor de tooling efímero sin acceso a datos que corre como root.
+herramientas:
+- checkov
+- tfsec
+- trivy
+- kics
+- aws-cli
+ia_revisa: Que contenedores y servicios tengan solo el acceso de red y los permisos IAM requeridos y no se ejecuten como root,
+  juzgando ingress de DB abierto a 0.0.0.0/0 en puertos de datos, egress sin justificar, políticas IAM con Resource "*" y
+  acciones con comodín, y Dockerfiles sin usuario non-root.
+remediacion:
+- Restringir ingress DB a SG/subredes de la app.
+- Restringir egress.
+- Aplicar mínimo privilegio en IAM.
+- Ejecutar contenedores con usuario non-root.
+verificacion: Escaneo IaC sin hallazgos altos; ningún SG permite 0.0.0.0/0 en puertos de datos; docker exec whoami no devuelve
+  root.
+criterio_aceptacion: Escaneo IaC sin hallazgos altos; ningún SG permite 0.0.0.0/0 en puertos de datos; docker exec whoami
+  no devuelve root.
+fragmentos_regex:
+- '0\.0\.0\.0/0'
+- '(5432|3306)'
+- 'Resource\s*:\s*"\*"'
+- '(?i)USER\s+root'
+aplica_con_llm: false

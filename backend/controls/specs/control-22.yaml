@@ -1,0 +1,33 @@
+id: "22"
+nombre: Reputación y confianza de dependencias de terceros
+categoria_owasp: A08
+criticidad_referencia: MEDIO
+familia: Dependencias
+metodo: repo
+donde_buscar:
+- '**/package.json'
+- '**/package-lock.json'
+- '**/requirements.txt'
+- '**/pyproject.toml'
+- '**/poetry.lock'
+senales_incumplimiento:
+- Mantenedor único, paquete abandonado/stub con nombre similar a paquete popular
+- dependencias declaradas sin importar
+falsos_positivos:
+- Paquete con nombre similar al popular pero publicado por una organización confiable antes del popular (no typosquatting).
+- Dependencia sin import directo pero usada como plugin o peer dependency requerida en runtime.
+herramientas:
+- revision-manual
+ia_revisa: Que no se usen dependencias con riesgo de cadena de suministro, juzgando mantenedor único, paquetes abandonados
+  o stub con nombre similar a paquetes populares (typosquatting) y dependencias declaradas sin importar.
+remediacion:
+- Retirar dependencias huérfanas/sin uso.
+- Buscar alternativas mantenidas para paquetes en uso.
+verificacion: Paquetes retirados de manifiestos; 0 hallazgos de reputación.
+criterio_aceptacion: Paquetes retirados de manifiestos; 0 hallazgos de reputación.
+fragmentos_regex:
+- '(?i)typosquat'
+- '(?i)\bstub\b'
+- '(?i)abandon'
+- '(?i)maintainer|mantenedor'
+aplica_con_llm: false

@@ -21,11 +21,13 @@ RUN apt-get update \
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY analyzer.py benchmark_service.py api_server.py scanner_tools.py severity_engine.py webhook_service.py triage_agent.py fixer_agent.py openapi.yaml ./
+COPY *.py openapi.yaml ./
 COPY proxy/ proxy/
 COPY rules/ rules/
 COPY data/ data/
 COPY bench/ bench/
+COPY controls/ controls/
+COPY verificadores/ verificadores/
 
 RUN useradd --create-home appuser \
     && mkdir -p /app/storage/analyses /app/storage/benchmark \

@@ -1,10 +1,14 @@
 import React from 'react';
 
 const TAB_TITLES = {
-  overview: 'Dashboard & Análisis SAST',
+  overview: 'Panel de Control & Análisis SAST',
   findings: 'Hallazgos de Seguridad & Remediaciones',
-  benchmark: 'Accuracy Benchmark Engine & Regresión SAST',
+  benchmark: 'Benchmark de Precisión & Regresión SAST',
+  proxy: 'Proxy Seguro de Secretos & Auditoría de APIs',
   report: 'Reporte Técnico & Entregable de Auditoría',
+  executive: 'Resumen Ejecutivo & Auditoría Imprimible',
+  history: 'Historial de Análisis & Comparativa de Cambios',
+  controls: 'Inventario de Controles de Seguridad & Verificación en Vivo',
 };
 
 export default function Topbar({ activeTab, onRefresh }) {

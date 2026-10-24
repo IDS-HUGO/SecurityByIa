@@ -115,21 +115,21 @@ export default function FindingDetailModal({
     if (!diffText) return null;
     const lines = diffText.split('\n');
     return (
-      <div style={{ fontFamily: 'monospace', fontSize: '0.82rem', background: '#0f172a', borderRadius: '6px', padding: '0.75rem', overflowX: 'auto', border: '1px solid #334155' }}>
+      <div className="diff-viewer">
         {lines.map((l, idx) => {
           let bg = 'transparent';
-          let color = '#cbd5e1';
+          let color = '#e2e8f0';
           if (l.startsWith('+') && !l.startsWith('+++')) {
-            bg = 'rgba(34, 197, 94, 0.2)';
-            color = '#4ade80';
+            bg = 'rgba(22, 101, 52, 0.4)';
+            color = '#86efac';
           } else if (l.startsWith('-') && !l.startsWith('---')) {
-            bg = 'rgba(239, 68, 68, 0.2)';
-            color = '#f87171';
+            bg = 'rgba(153, 27, 27, 0.4)';
+            color = '#fca5a5';
           } else if (l.startsWith('@@')) {
-            color = '#818cf8';
+            color = '#38bdf8';
           }
           return (
-            <div key={idx} style={{ background: bg, color, padding: '1px 6px', whiteSpace: 'pre' }}>
+            <div key={idx} style={{ background: bg, color, padding: '2px 8px', whiteSpace: 'pre', fontFamily: 'var(--font-mono)' }}>
               {l}
             </div>
           );
@@ -158,23 +158,23 @@ export default function FindingDetailModal({
     });
 
     return (
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontFamily: 'monospace', fontSize: '0.82rem', background: '#0f172a', borderRadius: '6px', padding: '0.75rem', overflowX: 'auto', border: '1px solid #334155' }}>
+      <div className="diff-viewer-grid">
         <div>
-          <div style={{ fontWeight: 600, color: '#f87171', borderBottom: '1px solid #334155', paddingBottom: '0.3rem', marginBottom: '0.4rem' }}>
+          <div style={{ fontWeight: 700, color: '#f87171', borderBottom: '1px solid #334155', paddingBottom: '6px', marginBottom: '6px' }}>
             Original (Con hallazgo)
           </div>
           {origLines.map((item, idx) => (
-            <div key={idx} style={{ background: item.type === 'del' ? 'rgba(239, 68, 68, 0.25)' : 'transparent', color: item.type === 'del' ? '#fca5a5' : '#cbd5e1', padding: '1px 4px', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+            <div key={idx} style={{ background: item.type === 'del' ? 'rgba(220, 38, 38, 0.35)' : 'transparent', color: item.type === 'del' ? '#fca5a5' : '#e2e8f0', padding: '2px 6px', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
               {item.text || ' '}
             </div>
           ))}
         </div>
         <div>
-          <div style={{ fontWeight: 600, color: '#4ade80', borderBottom: '1px solid #334155', paddingBottom: '0.3rem', marginBottom: '0.4rem' }}>
+          <div style={{ fontWeight: 700, color: '#4ade80', borderBottom: '1px solid #334155', paddingBottom: '6px', marginBottom: '6px' }}>
             Modificado (Parche propuesto)
           </div>
           {patchedLines.map((item, idx) => (
-            <div key={idx} style={{ background: item.type === 'add' ? 'rgba(34, 197, 94, 0.25)' : 'transparent', color: item.type === 'add' ? '#86efac' : '#cbd5e1', padding: '1px 4px', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+            <div key={idx} style={{ background: item.type === 'add' ? 'rgba(22, 163, 74, 0.35)' : 'transparent', color: item.type === 'add' ? '#86efac' : '#e2e8f0', padding: '2px 6px', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
               {item.text || ' '}
             </div>
           ))}
@@ -189,7 +189,7 @@ export default function FindingDetailModal({
         <div className="modal-header">
           <div>
             <span className="eyebrow">DETALLE DEL HALLAZGO #{finding.id}</span>
-            <h2 style={{ margin: '0.25rem 0', fontSize: '1.25rem' }}>{finding.title || finding.rule}</h2>
+            <h2>{finding.title || finding.rule}</h2>
           </div>
           <button type="button" className="btn-close" onClick={onClose} aria-label="Cerrar">
             ✕
@@ -198,7 +198,7 @@ export default function FindingDetailModal({
 
         <div className="modal-body">
           {/* Severity & SLA Bar */}
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap' }}>
             <span className={`sev-badge ${finding.severity}`}>
               {finding.severity?.toUpperCase()}
             </span>
@@ -222,10 +222,10 @@ export default function FindingDetailModal({
           {/* Dependency information block */}
           {isDep && (
             <div className="dependency-block">
-              <h4 style={{ margin: '0 0 0.5rem', fontSize: '0.9rem', color: 'var(--text-color)' }}>
+              <h4 style={{ margin: '0 0 8px 0', fontSize: '13px', color: 'var(--text-main)' }}>
                 Información de Dependencia Vulnerable
               </h4>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px' }}>
                 <div>
                   <span className="detail-meta-label">Paquete</span>
                   <strong>{pkg.name || '—'}</strong>
@@ -236,7 +236,7 @@ export default function FindingDetailModal({
                 </div>
                 <div>
                   <span className="detail-meta-label">Versión corregida</span>
-                  <strong style={{ color: 'var(--success-color)' }}>{pkg.fixed_version || 'No reportada'}</strong>
+                  <strong style={{ color: 'var(--emerald)' }}>{pkg.fixed_version || 'No reportada'}</strong>
                 </div>
               </div>
             </div>
@@ -244,16 +244,16 @@ export default function FindingDetailModal({
 
           {/* Secret verification block */}
           {isSecret && (
-            <div style={{ background: 'var(--card-bg-subtle)', padding: '0.75rem 1rem', borderRadius: '6px', marginBottom: '1rem', border: '1px solid var(--border-color)' }}>
+            <div style={{ background: 'var(--bg-surface)', padding: '12px 16px', borderRadius: '6px', marginBottom: '16px', border: '1px solid var(--border-medium)' }}>
               <span className="detail-meta-label">Estado de Verificación del Secreto</span>
-              <strong style={{ color: finding.verification === 'VALID' ? 'var(--critical-color)' : finding.verification === 'INVALID' ? 'var(--muted-color)' : 'var(--warning-color)' }}>
+              <strong style={{ color: finding.verification === 'VALID' ? 'var(--crimson)' : finding.verification === 'INVALID' ? 'var(--text-muted)' : 'var(--amber)' }}>
                 {finding.verification === 'VALID' ? 'VERIFICADO Y ACTIVO (VALID)' : finding.verification === 'INVALID' ? 'INVÁLIDO / DE PRUEBA (INVALID)' : 'NO VERIFICADO (UNVERIFIED)'}
               </strong>
             </div>
           )}
 
           {/* Metadata Grid */}
-          <div className="detail-grid" style={{ marginBottom: '1rem' }}>
+          <div className="detail-grid" style={{ marginBottom: '16px' }}>
             <div>
               <span className="detail-meta-label">Ubicación</span>
               <code>{finding.file}:{finding.line || '?'}</code>
@@ -275,50 +275,50 @@ export default function FindingDetailModal({
           </div>
 
           {/* Problem */}
-          <div style={{ marginBottom: '1rem' }}>
+          <div style={{ marginBottom: '16px' }}>
             <span className="detail-meta-label">Descripción del Problema</span>
-            <p style={{ margin: '0.25rem 0', color: 'var(--text-color)', lineHeight: 1.5 }}>
+            <p style={{ margin: '4px 0 0', color: 'var(--text-main)', lineHeight: 1.5 }}>
               {finding.problem}
             </p>
           </div>
 
           {/* Recommendation */}
-          <div style={{ marginBottom: '1rem' }}>
+          <div style={{ marginBottom: '16px' }}>
             <span className="detail-meta-label">Solución Recomendada</span>
-            <p style={{ margin: '0.25rem 0', color: 'var(--text-color)', lineHeight: 1.5 }}>
+            <p style={{ margin: '4px 0 0', color: 'var(--text-main)', lineHeight: 1.5 }}>
               {finding.solution}
             </p>
           </div>
 
           {/* Triage Status & Human Review Panel (Feature 5) */}
-          <div className="triage-panel" style={{ background: 'var(--card-bg-subtle, #1e293b)', padding: '1rem 1.25rem', borderRadius: '8px', marginBottom: '1.25rem', border: '1px solid var(--border-color, #334155)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+          <div className="triage-panel">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
               <div>
-                <span className="eyebrow" style={{ color: 'var(--primary, #6366f1)' }}>TRIAGE & CLASIFICACIÓN (F5)</span>
-                <h4 style={{ margin: '0.2rem 0', fontSize: '1rem', color: 'var(--text-color)' }}>
-                  Veredicto: {' '}
-                  <span className={`status status-${verdictClass}`} style={{ textTransform: 'uppercase', fontWeight: 600 }}>
+                <span className="eyebrow" style={{ color: 'var(--accent)' }}>TRIAGE ASISTIDO POR IA</span>
+                <h4 style={{ margin: '2px 0 0', fontSize: '14px', color: 'var(--text-main)' }}>
+                  Veredicto:{' '}
+                  <span className={`status status-${verdictClass}`} style={{ textTransform: 'uppercase', fontWeight: 700 }}>
                     {triageVerdict}
                   </span>
                 </h4>
               </div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--muted-color)' }}>
-                Decidido por: <strong style={{ color: 'var(--text-color)' }}>{decidedBy}</strong>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                Decidido por: <strong style={{ color: 'var(--text-main)' }}>{decidedBy}</strong>
                 {triageConfidence !== null && ` (${(triageConfidence * 100).toFixed(0)}% confianza)`}
               </div>
             </div>
 
             {triageReason && (
-              <p style={{ margin: '0 0 0.75rem', fontSize: '0.875rem', color: 'var(--text-color)', lineHeight: 1.5, background: 'rgba(0,0,0,0.2)', padding: '0.5rem 0.75rem', borderRadius: '4px' }}>
+              <p style={{ margin: '0 0 12px', fontSize: '13px', color: 'var(--text-main)', lineHeight: 1.5, background: 'var(--bg-inset)', padding: '8px 12px', borderRadius: '4px', border: '1px solid var(--border-subtle)' }}>
                 <strong>Motivo actual:</strong> {triageReason}
               </p>
             )}
 
             {triageAuthor && (
-              <div style={{ fontSize: '0.78rem', color: 'var(--muted-color)', marginBottom: '0.75rem' }}>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px' }}>
                 Registrado por: <code>{triageAuthor}</code> en <span>{triageTimestamp}</span>
                 {finding.triage?.fingerprint && (
-                  <span style={{ marginLeft: '0.5rem', fontFamily: 'monospace' }}>
+                  <span style={{ marginLeft: '8px', fontFamily: 'var(--font-mono)' }}>
                     [Huella: {finding.triage.fingerprint.slice(0, 10)}...]
                   </span>
                 )}
@@ -327,38 +327,36 @@ export default function FindingDetailModal({
 
             {/* Human Triage Action Controls */}
             {onTriageDecision && (
-              <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color, #334155)' }}>
-                <h5 style={{ margin: '0 0 0.5rem', fontSize: '0.875rem', color: 'var(--text-color)' }}>
+              <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid var(--border-subtle)' }}>
+                <h5 style={{ margin: '0 0 8px', fontSize: '13px', color: 'var(--text-main)' }}>
                   Revisión Humana / Cambiar Decisión (motivo obligatorio):
                 </h5>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px', marginBottom: '12px' }}>
                   <textarea
                     placeholder="Escribí el motivo detallado de tu decisión (obligatorio)..."
                     value={reason}
                     onChange={(e) => { setReason(e.target.value); setError(''); }}
                     rows={2}
-                    style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--input-bg)', color: 'var(--text-color)', fontSize: '0.85rem' }}
                   />
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--muted-color)' }}>Analista:</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Analista:</span>
                     <input
                       type="text"
                       value={author}
                       onChange={(e) => setAuthor(e.target.value)}
-                      style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--input-bg)', color: 'var(--text-color)', fontSize: '0.8rem', width: '180px' }}
+                      style={{ width: '200px' }}
                     />
                   </div>
                 </div>
 
-                {error && <p style={{ color: 'var(--critical-color, #ef4444)', fontSize: '0.8rem', margin: '0 0 0.5rem' }}>{error}</p>}
-                {successMsg && <p style={{ color: 'var(--success-color, #22c55e)', fontSize: '0.8rem', margin: '0 0 0.5rem' }}>{successMsg}</p>}
+                {error && <p style={{ color: 'var(--crimson)', fontSize: '12px', margin: '0 0 8px', fontWeight: 600 }}>{error}</p>}
+                {successMsg && <p style={{ color: 'var(--emerald)', fontSize: '12px', margin: '0 0 8px', fontWeight: 600 }}>{successMsg}</p>}
 
-                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   <button
                     type="button"
-                    className="btn-primary"
-                    style={{ background: '#16a34a', borderColor: '#16a34a', fontSize: '0.8rem', padding: '0.35rem 0.75rem' }}
+                    className="btn-success"
                     disabled={isSubmitting}
                     onClick={() => handleAction('verdadero')}
                   >
@@ -366,8 +364,7 @@ export default function FindingDetailModal({
                   </button>
                   <button
                     type="button"
-                    className="btn-primary"
-                    style={{ background: '#dc2626', borderColor: '#dc2626', fontSize: '0.8rem', padding: '0.35rem 0.75rem' }}
+                    className="btn-danger"
                     disabled={isSubmitting}
                     onClick={() => handleAction('falso')}
                   >
@@ -375,8 +372,8 @@ export default function FindingDetailModal({
                   </button>
                   <button
                     type="button"
-                    className="btn-primary"
-                    style={{ background: '#d97706', borderColor: '#d97706', fontSize: '0.8rem', padding: '0.35rem 0.75rem' }}
+                    className="btn-secondary"
+                    style={{ borderColor: 'var(--amber)', color: 'var(--amber)' }}
                     disabled={isSubmitting}
                     onClick={() => handleAction('incierto')}
                   >
@@ -388,25 +385,37 @@ export default function FindingDetailModal({
           </div>
 
           {/* Feature 6: Corrección Asistida y Verificación (Patch Review View) */}
-          <div className="remediation-panel" style={{ background: 'var(--card-bg-subtle, #1e293b)', padding: '1rem 1.25rem', borderRadius: '8px', marginBottom: '1.25rem', border: '1px solid var(--border-color, #334155)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+          <div className="remediation-panel">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
               <div>
-                <span className="eyebrow" style={{ color: '#10b981' }}>CORRECCIÓN ASISTIDA Y VERIFICACIÓN (F6)</span>
-                <h4 style={{ margin: '0.2rem 0', fontSize: '1rem', color: 'var(--text-color)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span className="eyebrow" style={{ color: 'var(--emerald)' }}>CORRECCIÓN ASISTIDA Y VERIFICACIÓN AUTOMATIZADA</span>
+                <h4 style={{ margin: '2px 0 0', fontSize: '14px', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span>Estado del hallazgo:</span>
                   <span style={{
-                    padding: '0.15rem 0.6rem',
+                    padding: '2px 8px',
                     borderRadius: '4px',
-                    fontSize: '0.8rem',
+                    fontSize: '11px',
                     fontWeight: 700,
                     textTransform: 'uppercase',
                     background:
-                      remStatus === 'verified' ? '#166534' :
-                      remStatus === 'approved' ? '#065f46' :
-                      remStatus === 'discarded' ? '#991b1b' :
-                      remStatus === 'rejected' ? '#881337' :
-                      remStatus === 'patch_proposed' ? '#854d0e' : '#334155',
-                    color: '#fff',
+                      remStatus === 'verified' ? 'var(--emerald-bg)' :
+                      remStatus === 'approved' ? 'var(--emerald-bg)' :
+                      remStatus === 'discarded' ? 'var(--crimson-bg)' :
+                      remStatus === 'rejected' ? 'var(--crimson-bg)' :
+                      remStatus === 'patch_proposed' ? 'var(--amber-bg)' : 'var(--bg-inset)',
+                    color:
+                      remStatus === 'verified' ? 'var(--emerald)' :
+                      remStatus === 'approved' ? 'var(--emerald)' :
+                      remStatus === 'discarded' ? 'var(--crimson)' :
+                      remStatus === 'rejected' ? 'var(--crimson)' :
+                      remStatus === 'patch_proposed' ? 'var(--amber)' : 'var(--text-secondary)',
+                    border: `1px solid ${
+                      remStatus === 'verified' ? 'var(--emerald-border)' :
+                      remStatus === 'approved' ? 'var(--emerald-border)' :
+                      remStatus === 'discarded' ? 'var(--crimson-border)' :
+                      remStatus === 'rejected' ? 'var(--crimson-border)' :
+                      remStatus === 'patch_proposed' ? 'var(--amber-border)' : 'var(--border-medium)'
+                    }`,
                   }}>
                     {remStatus === 'verified' ? 'Verificado' :
                      remStatus === 'approved' ? 'Aprobado' :
@@ -422,7 +431,6 @@ export default function FindingDetailModal({
                 <button
                   type="button"
                   className="btn-primary"
-                  style={{ background: '#0284c7', borderColor: '#0284c7', fontSize: '0.82rem', padding: '0.4rem 0.85rem' }}
                   disabled={isProposingFix}
                   onClick={handleProposeFix}
                 >
@@ -433,7 +441,7 @@ export default function FindingDetailModal({
 
             {/* Explanation */}
             {remediation.explanation && (
-              <p style={{ margin: '0 0 0.75rem', fontSize: '0.85rem', color: '#cbd5e1', lineHeight: 1.5, background: 'rgba(0,0,0,0.2)', padding: '0.5rem 0.75rem', borderRadius: '4px' }}>
+              <p style={{ margin: '0 0 12px', fontSize: '13px', color: 'var(--text-main)', lineHeight: 1.5, background: 'var(--bg-inset)', padding: '8px 12px', borderRadius: '4px', border: '1px solid var(--border-subtle)' }}>
                 <strong>Explicación:</strong> {remediation.explanation}
               </p>
             )}
@@ -441,18 +449,19 @@ export default function FindingDetailModal({
             {/* Verification result callout */}
             {remediation.verification && (
               <div style={{
-                background: remediation.verification.verified ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                border: `1px solid ${remediation.verification.verified ? '#22c55e' : '#ef4444'}`,
-                color: remediation.verification.verified ? '#86efac' : '#fca5a5',
-                padding: '0.6rem 0.85rem',
+                background: remediation.verification.verified ? 'var(--emerald-bg)' : 'var(--crimson-bg)',
+                border: `1px solid ${remediation.verification.verified ? 'var(--emerald-border)' : 'var(--crimson-border)'}`,
+                color: remediation.verification.verified ? 'var(--emerald)' : 'var(--crimson)',
+                padding: '10px 14px',
                 borderRadius: '6px',
-                fontSize: '0.85rem',
-                marginBottom: '0.75rem',
+                fontSize: '13px',
+                marginBottom: '12px',
+                fontWeight: 500,
               }}>
                 <strong>{remediation.verification.verified ? '✓ Re-verificación exitosa: ' : '✕ Verificación descartada: '}</strong>
                 {remediation.verification.message}
                 {remediation.verification.new_findings && remediation.verification.new_findings.length > 0 && (
-                  <ul style={{ margin: '0.3rem 0 0', paddingLeft: '1.25rem' }}>
+                  <ul style={{ margin: '6px 0 0', paddingLeft: '20px' }}>
                     {remediation.verification.new_findings.map((nf, i) => (
                       <li key={i}>{nf.rule} (Línea {nf.line}): {nf.message}</li>
                     ))}
@@ -463,25 +472,25 @@ export default function FindingDetailModal({
 
             {/* Human review audit info if reviewed */}
             {remediation.reviewed_by && (
-              <div style={{ fontSize: '0.8rem', color: 'var(--muted-color)', marginBottom: '0.75rem', background: 'rgba(0,0,0,0.15)', padding: '0.5rem 0.75rem', borderRadius: '4px' }}>
-                Revisión humana: <strong style={{ color: remStatus === 'approved' ? '#4ade80' : '#f87171' }}>{remStatus.toUpperCase()}</strong> por <code>{remediation.reviewer}</code> en {new Date(remediation.review_timestamp).toLocaleString()}
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px', background: 'var(--bg-inset)', padding: '8px 12px', borderRadius: '4px', border: '1px solid var(--border-subtle)' }}>
+                Revisión humana: <strong style={{ color: remStatus === 'approved' ? 'var(--emerald)' : 'var(--crimson)' }}>{remStatus.toUpperCase()}</strong> por <code>{remediation.reviewer}</code> en {new Date(remediation.review_timestamp).toLocaleString()}
                 <br />
-                <span style={{ color: 'var(--text-color)' }}>Motivo: "{remediation.review_reason}"</span>
+                <span style={{ color: 'var(--text-main)' }}>Motivo: "{remediation.review_reason}"</span>
               </div>
             )}
 
             {/* Diff View (Side-by-side or Unified) */}
             {hasDiff && (
-              <div style={{ marginTop: '0.75rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                  <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-color)' }}>
+              <div style={{ marginTop: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-main)' }}>
                     Revisión del Parche ({remediation.touched_files?.join(', ') || finding.file}):
                   </span>
-                  <div style={{ display: 'flex', gap: '0.25rem' }}>
+                  <div style={{ display: 'flex', gap: '4px' }}>
                     <button
                       type="button"
                       className={`btn-secondary ${diffViewMode === 'split' ? 'active-filter' : ''}`}
-                      style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}
+                      style={{ height: '28px', padding: '0 10px', fontSize: '11px' }}
                       onClick={() => setDiffViewMode('split')}
                     >
                       Lado a Lado
@@ -489,7 +498,7 @@ export default function FindingDetailModal({
                     <button
                       type="button"
                       className={`btn-secondary ${diffViewMode === 'unified' ? 'active-filter' : ''}`}
-                      style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}
+                      style={{ height: '28px', padding: '0 10px', fontSize: '11px' }}
                       onClick={() => setDiffViewMode('unified')}
                     >
                       Unificado
@@ -503,38 +512,36 @@ export default function FindingDetailModal({
 
             {/* Patch Review Actions (Aprobar / Rechazar con motivo obligatorio) */}
             {hasDiff && onReviewRemediation && (
-              <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color, #334155)' }}>
-                <h5 style={{ margin: '0 0 0.5rem', fontSize: '0.875rem', color: 'var(--text-color)' }}>
+              <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid var(--border-subtle)' }}>
+                <h5 style={{ margin: '0 0 8px', fontSize: '13px', color: 'var(--text-main)' }}>
                   Aprobar o Rechazar Parche (motivo obligatorio):
                 </h5>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px', marginBottom: '12px' }}>
                   <textarea
                     placeholder="Escribí el motivo técnico para aprobar o rechazar este parche (obligatorio)..."
                     value={remReason}
                     onChange={(e) => { setRemReason(e.target.value); setRemError(''); }}
                     rows={2}
-                    style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--input-bg)', color: 'var(--text-color)', fontSize: '0.85rem' }}
                   />
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--muted-color)' }}>Revisor:</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Revisor:</span>
                     <input
                       type="text"
                       value={remAuthor}
                       onChange={(e) => setRemAuthor(e.target.value)}
-                      style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--input-bg)', color: 'var(--text-color)', fontSize: '0.8rem', width: '180px' }}
+                      style={{ width: '200px' }}
                     />
                   </div>
                 </div>
 
-                {remError && <p style={{ color: 'var(--critical-color, #ef4444)', fontSize: '0.8rem', margin: '0 0 0.5rem' }}>{remError}</p>}
-                {remSuccessMsg && <p style={{ color: 'var(--success-color, #22c55e)', fontSize: '0.8rem', margin: '0 0 0.5rem' }}>{remSuccessMsg}</p>}
+                {remError && <p style={{ color: 'var(--crimson)', fontSize: '12px', margin: '0 0 8px', fontWeight: 600 }}>{remError}</p>}
+                {remSuccessMsg && <p style={{ color: 'var(--emerald)', fontSize: '12px', margin: '0 0 8px', fontWeight: 600 }}>{remSuccessMsg}</p>}
 
-                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   <button
                     type="button"
-                    className="btn-primary"
-                    style={{ background: '#16a34a', borderColor: '#16a34a', fontSize: '0.8rem', padding: '0.35rem 0.85rem' }}
+                    className="btn-success"
                     disabled={isRemSubmitting}
                     onClick={() => handleRemediationReview('approved')}
                   >
@@ -542,8 +549,7 @@ export default function FindingDetailModal({
                   </button>
                   <button
                     type="button"
-                    className="btn-primary"
-                    style={{ background: '#dc2626', borderColor: '#dc2626', fontSize: '0.8rem', padding: '0.35rem 0.85rem' }}
+                    className="btn-danger"
                     disabled={isRemSubmitting}
                     onClick={() => handleRemediationReview('rejected')}
                   >
@@ -560,11 +566,11 @@ export default function FindingDetailModal({
               <span className="detail-meta-label">Contexto de Código</span>
               <pre className="code-box">
                 {finding.code_context.map((ctx) => (
-                  <div key={ctx.line} style={{ display: 'flex', gap: '1rem' }}>
-                    <span style={{ color: 'var(--muted-color)', userSelect: 'none', width: '2.5rem', textAlign: 'right' }}>
+                  <div key={ctx.line} style={{ display: 'flex', gap: '16px' }}>
+                    <span style={{ color: '#64748b', userSelect: 'none', width: '32px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>
                       {ctx.line}
                     </span>
-                    <span>{ctx.text}</span>
+                    <span style={{ color: '#f8fafc' }}>{ctx.text}</span>
                   </div>
                 ))}
               </pre>

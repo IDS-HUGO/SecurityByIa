@@ -83,16 +83,16 @@ export default function OverviewTab({ currentAnalysis, recentAnalyses, onLoadAna
       </section>
 
       {/* Recent Analyses History Section */}
-      <section className="card" style={{ marginTop: '1.5rem' }}>
-        <div style={{ padding: '1.25rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <section className="card" style={{ marginTop: '20px' }}>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <p className="eyebrow">HISTORIAL DE ACTIVIDAD</p>
-            <h3 style={{ margin: '0.25rem 0 0', fontSize: '1.15rem' }}>Últimos Análisis Realizados</h3>
+            <h3 style={{ margin: '4px 0 0', fontSize: '16px' }}>Últimos Análisis Realizados</h3>
           </div>
-          <span className="text-muted" style={{ fontSize: '0.85rem' }}>Persistidos en disco</span>
+          <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Persistidos en disco</span>
         </div>
 
-        <div style={{ overflowX: 'auto' }}>
+        <div className="table-wrap">
           {recentAnalyses && recentAnalyses.length > 0 ? (
             <table className="findings-table">
               <thead>
@@ -112,14 +112,14 @@ export default function OverviewTab({ currentAnalysis, recentAnalyses, onLoadAna
                   return (
                     <tr key={item.analysis_id}>
                       <td>
-                        <strong style={{ color: 'var(--text-color)' }}>
+                        <strong style={{ color: 'var(--text-main)' }}>
                           {(item.repository && item.repository.name) || repoUrl}
                         </strong>
-                        <div style={{ fontSize: '0.78rem', color: 'var(--muted-color)', wordBreak: 'break-all' }}>
+                        <div style={{ fontSize: '12px', color: 'var(--text-muted)', wordBreak: 'break-all', marginTop: '2px' }}>
                           {repoUrl}
                         </div>
                       </td>
-                      <td style={{ fontSize: '0.85rem', color: 'var(--muted-color)', whiteSpace: 'nowrap' }}>
+                      <td style={{ fontSize: '13px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
                         {dateStr}
                       </td>
                       <td>
@@ -128,19 +128,19 @@ export default function OverviewTab({ currentAnalysis, recentAnalyses, onLoadAna
                         </span>
                       </td>
                       <td>
-                        <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                           {s.critical > 0 && <span className="sev-badge critical">C: {s.critical}</span>}
                           {s.high > 0 && <span className="sev-badge high">A: {s.high}</span>}
                           {s.medium > 0 && <span className="sev-badge medium">M: {s.medium}</span>}
                           {s.low > 0 && <span className="sev-badge low">B: {s.low}</span>}
-                          {(!s.total || s.total === 0) && <span style={{ color: 'var(--muted-color)', fontSize: '0.8rem' }}>0 hallazgos</span>}
+                          {(!s.total || s.total === 0) && <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>0 hallazgos</span>}
                         </div>
                       </td>
                       <td style={{ textAlign: 'right' }}>
                         <button
                           type="button"
                           className="btn-secondary"
-                          style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem' }}
+                          style={{ height: '30px', padding: '0 10px', fontSize: '12px' }}
                           onClick={() => onLoadAnalysis(item.analysis_id)}
                         >
                           Ver análisis
@@ -152,7 +152,7 @@ export default function OverviewTab({ currentAnalysis, recentAnalyses, onLoadAna
               </tbody>
             </table>
           ) : (
-            <div className="empty-state" style={{ padding: '3rem 1rem' }}>
+            <div className="empty-state">
               <p>No hay análisis registrados todavía. Iniciá un análisis arriba para comenzar.</p>
             </div>
           )}

@@ -11,14 +11,18 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List
 
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, Response, jsonify, request, send_from_directory
 
 from analyzer import analyze_repo
 import benchmark_service
+import compare_service
 import fixer_agent
+import report_builder
 import triage_agent
 import webhook_service
+from controls import review_service, spec_loader
 from proxy import server as proxy_server
+import verificadores
 
 
 ROOT = Path(__file__).resolve().parent
@@ -260,6 +264,63 @@ def list_analyses():
     return jsonify(results[:20])
 
 
+def _load_analysis_result(analysis_id: str):
+    with jobs_lock:
+        result = jobs.get(analysis_id)
+    if result is None:
+        path = STORAGE / f"{analysis_id}.json"
+        if path.exists():
+            result = json.loads(path.read_text(encoding="utf-8"))
+    return result
+
+
+@app.get("/api/analysis/<analysis_id>/report.md")
+def get_analysis_report_md(analysis_id: str):
+    """Reporte enriquecido (F9): SHA, fecha, severidades, remediación y redactor."""
+    result = _load_analysis_result(analysis_id)
+    if result is None:
+        return jsonify({"error": "Analysis not found."}), 404
+    markdown = report_builder.build_markdown_report(result)
+    return Response(markdown, mimetype="text/markdown")
+
+
+@app.get("/api/analysis/<analysis_id>/report.sarif")
+def get_analysis_report_sarif(analysis_id: str):
+    """Exportación SARIF 2.1.0 del análisis (F9)."""
+    result = _load_analysis_result(analysis_id)
+    if result is None:
+        return jsonify({"error": "Analysis not found."}), 404
+    return jsonify(report_builder.build_sarif_report(result))
+
+
+@app.get("/api/analysis/<analysis_id>/executive-summary")
+def get_analysis_executive_summary(analysis_id: str):
+    """Resumen ejecutivo de una página para la vista imprimible (F9)."""
+    result = _load_analysis_result(analysis_id)
+    if result is None:
+        return jsonify({"error": "Analysis not found."}), 404
+    return jsonify(report_builder.build_executive_summary(result))
+
+
+@app.get("/api/analyses/compare")
+def compare_two_analyses():
+    """Compara dos análisis del mismo repositorio (F9): nuevos/corregidos/persistentes."""
+    base_id = request.args.get("base", "")
+    target_id = request.args.get("target", "")
+    if not base_id or not target_id:
+        return jsonify({"error": "Parámetros requeridos: base y target (analysis_id)."}), 400
+    base = _load_analysis_result(base_id)
+    if base is None:
+        return jsonify({"error": f"Analysis {base_id} not found."}), 404
+    target = _load_analysis_result(target_id)
+    if target is None:
+        return jsonify({"error": f"Analysis {target_id} not found."}), 404
+    try:
+        return jsonify(compare_service.compare_analyses(base, target))
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+
 @app.get("/api/bench")
 def get_bench():
     """Return status of benchmark engine, latest run, baseline, and history."""
@@ -437,10 +498,17 @@ def get_review_queue(analysis_id: str):
         key=lambda f: (severity_weights.get(str(f.get("severity", "low")).lower(), 4), f.get("id", 0)),
     )
 
+    controls_review = item.get("controls_review") or {}
+    controls_queue = [
+        c for c in controls_review.get("controls", [])
+        if c.get("needs_review") or c.get("only_agent")
+    ]
+
     return jsonify({
         "analysis_id": analysis_id,
-        "total": len(sorted_queue),
+        "total": len(sorted_queue) + len(controls_queue),
         "queue": sorted_queue,
+        "controls_queue": controls_queue,
     })
 
 
@@ -690,6 +758,173 @@ def github_webhook():
         "pr": pr["number"],
         "head_sha": pr["head_sha"],
     }), 202
+
+
+@app.get("/api/controls")
+def list_controls():
+    """Las 35 especificaciones de controles del inventario v1.0 (datos YAML)."""
+    try:
+        specs = spec_loader.load_specs()
+        return jsonify({"total": len(specs), "controls": specs})
+    except ValueError as exc:
+        return jsonify({"error": f"Especificaciones de controles inválidas: {exc}"}), 500
+
+
+@app.get("/api/analysis/<analysis_id>/controls")
+def get_analysis_controls(analysis_id: str):
+    """Revisión por control del análisis (estado, evidencia archivo:línea, confianza).
+
+    Sin revisión almacenada responde disponible=false con el motivo: NUNCA se
+    fabrican veredictos por ausencia de hallazgos."""
+    result = _load_analysis_result(analysis_id)
+    if result is None:
+        return jsonify({"error": "Analysis not found."}), 404
+    controls_review = result.get("controls_review")
+    if not isinstance(controls_review, dict) or not controls_review.get("disponible"):
+        return jsonify({
+            "analysis_id": analysis_id,
+            "controls_review": {
+                "disponible": False,
+                "motivo": ("Este análisis no incluye revisión por control (requiere "
+                           f"{review_service.ENABLE_ENV}=true y credenciales de IA al analizar)."),
+            },
+        })
+    return jsonify({"analysis_id": analysis_id, "controls_review": controls_review})
+
+
+@app.post("/api/analysis/<analysis_id>/controls/review")
+def re_review_controls(analysis_id: str):
+    """Re-derivación honesta de controles desde el análisis guardado (solo scanners).
+
+    Sin el repositorio clonado no se llama al agente: los controles con hallazgos
+    de scanners quedan 'no cumple' con su evidencia real y el resto 'no_evaluado'
+    (Por revisar). Nunca se fabrica 'cumple' por ausencia de hallazgos."""
+    result = _load_analysis_result(analysis_id)
+    if result is None:
+        return jsonify({"error": "Analysis not found."}), 404
+    try:
+        controls_review = review_service.review_from_stored_findings(result)
+    except ValueError as exc:
+        return jsonify({"error": f"Especificaciones de controles inválidas: {exc}"}), 500
+    result["controls_review"] = controls_review
+    _save(analysis_id, result)
+    return jsonify({"analysis_id": analysis_id, "controls_review": controls_review})
+
+
+@app.post("/api/verificaciones/en-vivo")
+def ejecutar_verificaciones_en_vivo():
+    """Ejecuta verificaciones en vivo (HTTP o Nube) con autorización explícita obligatoria."""
+    data = request.get_json(silent=True) or {}
+    autorizacion = data.get("autorizacion_confirmada")
+    if not autorizacion:
+        return jsonify({
+            "error": "Se exige confirmación explícita de autorización sobre el objetivo antes de ejecutar cualquier prueba en vivo."
+        }), 400
+
+    modo = str(data.get("modo") or "http").strip().lower()
+    target = str(data.get("target") or "").strip()
+    if not target:
+        return jsonify({"error": "Falta especificar el objetivo (URL o cuenta de nube)."}), 400
+
+    controles = data.get("controles")
+    if controles is not None and not isinstance(controles, list):
+        controles = [str(controles)]
+
+    if modo == "http":
+        results = verificadores.ejecutar_verificadores_http(
+            url=target,
+            autorizacion_confirmada=True,
+            controles=controles,
+            usuario=str(data.get("usuario") or "analista"),
+        )
+    elif modo in ("nube", "cloud"):
+        results = verificadores.ejecutar_verificadores_nube(
+            target=target,
+            autorizacion_confirmada=True,
+            controles=controles,
+            credentials=data.get("credentials"),
+            usuario=str(data.get("usuario") or "analista"),
+        )
+    else:
+        return jsonify({"error": f"Modo '{modo}' inválido (use 'http' o 'nube')."}), 400
+
+    return jsonify({
+        "status": "ok",
+        "modo": modo,
+        "target": target,
+        "autorizacion_confirmada": True,
+        "total": len(results),
+        "results": [r.to_dict() for r in results]
+    })
+
+
+@app.get("/api/verificaciones/bitacora")
+def obtener_bitacora_verificaciones():
+    """Retorna las entradas recientes de la bitácora de verificaciones en vivo."""
+    limit = request.args.get("limit", 50, type=int)
+    entradas = verificadores.leer_bitacora(limit=limit)
+    return jsonify({"total": len(entradas), "entries": entradas})
+
+
+@app.post("/api/analysis/<analysis_id>/controls/<control_id>/evidencia")
+def guardar_evidencia_control(analysis_id: str, control_id: str):
+    """Registra una ficha de evidencia para controles manuales (4, C1, C6, C9, C12, etc.)."""
+    result = _load_analysis_result(analysis_id)
+    if result is None:
+        return jsonify({"error": "Analysis not found."}), 404
+
+    data = request.get_json(silent=True) or {}
+    que_subir = str(data.get("que_subir") or "").strip()
+    quien_sube = str(data.get("quien_sube") or "").strip()
+    fecha = str(data.get("fecha") or datetime.now(timezone.utc).strftime("%Y-%m-%d")).strip()
+    notas = str(data.get("notas") or data.get("contenido") or "").strip()
+    estado = str(data.get("estado") or "cumple").strip()
+
+    if not quien_sube:
+        return jsonify({"error": "El campo 'quien_sube' es obligatorio."}), 400
+
+    controls_review = result.get("controls_review")
+    if not isinstance(controls_review, dict):
+        controls_review = {"disponible": True, "results": []}
+        result["controls_review"] = controls_review
+
+    results_list = controls_review.get("results") or []
+    target_entry = next((e for e in results_list if str(e.get("id")) == str(control_id)), None)
+
+    ficha = {
+        "que_subir": que_subir,
+        "quien_sube": quien_sube,
+        "fecha": fecha,
+        "notas": notas,
+    }
+
+    if target_entry:
+        target_entry["ficha_evidencia"] = ficha
+        target_entry["estado"] = estado
+        target_entry["requiere_revision"] = False
+        target_entry["razonamiento"] = f"Evidencia manual registrada por {quien_sube} el {fecha}: {notas or que_subir}"
+    else:
+        target_entry = {
+            "id": str(control_id),
+            "nombre": f"Control {control_id}",
+            "metodo": "evidencia",
+            "estado": estado,
+            "requiere_revision": False,
+            "ficha_evidencia": ficha,
+            "razonamiento": f"Evidencia manual registrada por {quien_sube} el {fecha}: {notas or que_subir}",
+            "evidencia": []
+        }
+        results_list.append(target_entry)
+        controls_review["results"] = results_list
+
+    _save(analysis_id, result)
+    return jsonify({
+        "status": "ok",
+        "analysis_id": analysis_id,
+        "control_id": control_id,
+        "ficha_evidencia": ficha,
+        "control": target_entry,
+    })
 
 
 if __name__ == "__main__":

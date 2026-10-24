@@ -1,0 +1,34 @@
+id: "11"
+nombre: Tokens JWT de duración corta (máximo 15-30 minutos)
+categoria_owasp: A07 (CWE-613)
+criticidad_referencia: ALTO
+familia: Acceso y autenticación
+metodo: repo
+donde_buscar:
+- '**/*.py'
+- '**/*.js'
+- '**/*.ts'
+senales_incumplimiento:
+- exp de horas o días
+- sin rotación de refresh tokens ni revocación
+- falta validación de firma, aud, iss o acepta alg=none
+falsos_positivos:
+- Refresh tokens de mayor duración cubiertos por rotación y revocación (el límite de 15-30 minutos aplica a access tokens).
+- Validación de firma, aud, iss y rechazo de alg=none ya implementada (control cumplido).
+herramientas:
+- revision-manual
+ia_revisa: Que los access tokens JWT expiren rápido (15-30 minutos) y exista mecanismo de revocación, juzgando exp de horas
+  o días, ausencia de rotación de refresh tokens o revocación, y validación incompleta de firma, aud, iss o aceptación de
+  alg=none.
+remediacion:
+- Reducir expiración de access tokens a 15-30 min.
+- Rotación de refresh tokens.
+- Validar jti para revocación, firma, exp, aud e iss.
+verificacion: Diferencia exp - iat <= 15-30 min; refresh tokens rotan en cada uso; token revocado es rechazado.
+criterio_aceptacion: Diferencia exp - iat <= 15-30 min; refresh tokens rotan en cada uso; token revocado es rechazado.
+fragmentos_regex:
+- '(?i)\bjwt\b'
+- '(?i)refresh[_ -]?token'
+- '"alg"|alg=none'
+- '(?i)\b(exp|iat|jti)\b'
+aplica_con_llm: false

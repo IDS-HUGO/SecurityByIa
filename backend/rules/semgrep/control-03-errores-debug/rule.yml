@@ -1,0 +1,61 @@
+rules:
+  # Control 3: Mensajes de error sin información sensible (inventario v1.0)
+  - id: py-django-debug-true-ctl3
+    languages: [python]
+    message: "Control 3 (CRÍTICO): DEBUG = True en producción expone stack traces, rutas internas y configuración; desactivá el modo debug."
+    severity: ERROR
+    metadata:
+      control: "3"
+      inventory: "inventario-controles-v1.0"
+      owasp: "A04:2021 - Insecure Design (CWE-209)"
+      cwe: ["CWE-489"]
+      criticidad: "CRITICO"
+    pattern: DEBUG = True
+
+  - id: py-flask-debug-true-ctl3
+    languages: [python]
+    message: "Control 3 (CRÍTICO): app.run(debug=True) activa el depurador interactivo; en producción DEBUG debe estar desactivado."
+    severity: ERROR
+    metadata:
+      control: "3"
+      inventory: "inventario-controles-v1.0"
+      owasp: "A04:2021 - Insecure Design (CWE-209)"
+      cwe: ["CWE-489"]
+      criticidad: "CRITICO"
+    pattern: $APP.run(..., debug=True, ...)
+
+  - id: py-error-detail-response-ctl3
+    languages: [python]
+    message: "Control 3 (CRÍTICO): la respuesta incluye el detalle de la excepción (str($E)/traceback); devolvé un mensaje genérico con ID de correlación y logueá el detalle internamente."
+    severity: ERROR
+    metadata:
+      control: "3"
+      inventory: "inventario-controles-v1.0"
+      owasp: "A04:2021 - Insecure Design (CWE-209)"
+      cwe: ["CWE-209"]
+      criticidad: "CRITICO"
+    pattern-either:
+      - pattern: jsonify(str($E), ...)
+      - pattern: 'JSONResponse({..., "detail": str($E), ...})'
+      - pattern: HTTPException(..., detail=str($E), ...)
+      - pattern: Response(traceback.format_exc(), ...)
+
+  - id: js-error-stack-response-ctl3
+    languages: [javascript]
+    message: "Control 3 (CRÍTICO): el manejador de errores responde con err.stack/err.message; devolvé un mensaje genérico en producción y el detalle solo a logs."
+    severity: ERROR
+    metadata:
+      control: "3"
+      inventory: "inventario-controles-v1.0"
+      owasp: "A04:2021 - Insecure Design (CWE-209)"
+      cwe: ["CWE-209"]
+      criticidad: "CRITICO"
+    pattern-either:
+      - pattern: $RES.send($ERR.stack)
+      - pattern: $RES.status(...).send($ERR.stack)
+      - pattern: $RES.send($ERR.message)
+      - pattern: $RES.status(...).send($ERR.message)
+
+  # no-semgrep: "ausencia de manejador global de excepciones" es una señal de omisión a nivel
+  # de aplicación; Semgrep no la expresa con precisión y la cubre la revisión con IA (spec del control 3).
+  # no-semgrep: "headers Server / X-Powered-By con versión" es configuración del servidor/proxy, no código.

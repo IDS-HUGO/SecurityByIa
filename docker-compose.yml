@@ -35,6 +35,7 @@ services:
       # SECURITY_TOTAL_TIMEOUT: "1200"
     volumes:
       - ./backend/storage:/app/storage
+      - ./controls:/controls:ro
     depends_on:
       proxy:
         condition: service_started
@@ -47,6 +48,7 @@ services:
     ports:
       - "5001:5001"
     environment:
+      PORT: "5001"
       PROXY_HOST: "0.0.0.0"
       PROXY_PORT: "5001"
       # Claves de proveedores: viven SOLO en este servicio, nunca en el backend.

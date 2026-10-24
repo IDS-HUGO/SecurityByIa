@@ -1,0 +1,70 @@
+rules:
+  # C4: SSRF — peticiones del servidor a URLs que controla el usuario (inventario v1.0)
+  - id: py-requests-variable-url-ctl4
+    languages: [python]
+    message: "C4 (SSRF): petición del servidor a una URL variable (webhook/scraping) sin allowlist visible; restringí destinos con allowlist, bloqueá IPs privadas y la metadata service (IMDSv2)."
+    severity: ERROR
+    metadata:
+      control: "C4"
+      inventory: "inventario-controles-v1.0"
+      owasp: "A10:2021 - Server-Side Request Forgery"
+      cwe: ["CWE-918"]
+      criticidad: "COMPLEMENTARIO"
+    patterns:
+      - pattern-either:
+          - pattern: requests.get($URL, ...)
+          - pattern: requests.post($URL, ...)
+          - pattern: httpx.get($URL, ...)
+          - pattern: httpx.post($URL, ...)
+          - pattern: urllib.request.urlopen($URL, ...)
+      - metavariable-pattern:
+          metavariable: $URL
+          patterns:
+            - pattern-not: '"..."'
+      - metavariable-regex:
+          metavariable: $URL
+          regex: "(?i).*(url|link|webhook|target|endpoint).*"
+
+  - id: py-requests-fstring-url-ctl4
+    languages: [python]
+    message: "C4 (SSRF): la URL se construye interpolando datos variables; validá contra una allowlist y bloqueá IPs privadas antes de la petición."
+    severity: ERROR
+    metadata:
+      control: "C4"
+      inventory: "inventario-controles-v1.0"
+      owasp: "A10:2021 - Server-Side Request Forgery"
+      cwe: ["CWE-918"]
+      criticidad: "COMPLEMENTARIO"
+    pattern-either:
+      - pattern: requests.get(f"...{$X}...", ...)
+      - pattern: requests.post(f"...{$X}...", ...)
+      - pattern: httpx.get(f"...{$X}...", ...)
+      - pattern: urllib.request.urlopen(f"...{$X}...", ...)
+
+  - id: js-fetch-variable-url-ctl4
+    languages: [javascript]
+    message: "C4 (SSRF): fetch/axios del servidor hacia una URL variable (webhook) sin allowlist; bloqueá IPs privadas y 169.254.169.254."
+    severity: ERROR
+    metadata:
+      control: "C4"
+      inventory: "inventario-controles-v1.0"
+      owasp: "A10:2021 - Server-Side Request Forgery"
+      cwe: ["CWE-918"]
+      criticidad: "COMPLEMENTARIO"
+    patterns:
+      - pattern-either:
+          - pattern: fetch($URL, ...)
+          - pattern: axios($URL, ...)
+          - pattern: axios.get($URL, ...)
+          - pattern: axios.post($URL, ...)
+      - metavariable-pattern:
+          metavariable: $URL
+          patterns:
+            - pattern-not: "'...'"
+            - pattern-not: '"..."'
+      - metavariable-regex:
+          metavariable: $URL
+          regex: "(?i).*(url|link|webhook|target|endpoint).*"
+
+  # nota: en triage los fetch del navegador son falso positivo conocido; estas reglas
+  # apuntan a llamadas del servidor (node/python) y el agente revisa el contexto por control.

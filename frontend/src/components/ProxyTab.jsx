@@ -60,7 +60,7 @@ export default function ProxyTab() {
       <section className="card">
         <div className="panel-heading">
           <div>
-            <p className="eyebrow">F8 · PROXY DE SECRETOS Y APIs</p>
+            <p className="eyebrow">SEGURIDAD & AISLAMIENTO DE CREDENCIALES</p>
             <h2>Auditoría del Proxy</h2>
           </div>
           <button type="button" className="btn-secondary" onClick={load}>

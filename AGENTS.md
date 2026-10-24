@@ -64,7 +64,10 @@ python -m pytest backend/tests/ -v # suite completa de backend, contrato OpenAPI
 - `backend/tests/test_triage_agent.py` — pruebas de triage IA (F5): 20 líneas acotadas, redacción de secretos, ejemplos negativos de inventario, esquema estricto, supresión por huella persistente y benchmark multi-modelo.
 - `backend/tests/test_fixer_agent.py` — pruebas de corrección asistida y verificación (F6): plantillas deterministas (yaml.safe_load, verify=True, dependencias, DEBUG=False, shell=False), diffs unificados, aislamiento en ramas temporales sin push a rama principal, descarte automático ante persistencia o nuevos hallazgos, pruebas en contenedor aislado sin red y flujo de aprobación/rechazo humano.
 - `backend/tests/test_webhook.py` — webhook de GitHub (F7): firma HMAC-SHA256 en tiempo constante, saneamiento del payload, índice de SHAs con claim atómico, filtrado por archivos modificados y endpoint (503/403/413/200/202).
+- `backend/tests/test_reports.py` — reportes y exportaciones (F9): SARIF 2.1.0 (versión, niveles, huellas, remediación), reporte Markdown con SHA/fecha/severidades, agente redactor (solo datos reales, huecos declarados), comparación de análisis (nuevos/corregidos/persistentes) y endpoints de reporte/summary/compare (200/400/404).
+- `backend/tests/test_controls.py` — revisión por control (inventario v1.0): 35 specs validadas, detección de SDK de LLM (gating C10–C13), evidencia determinista con tope de tokens, verificación/descarte de líneas citadas del agente, cobertura RBAC/IDOR por endpoint, cruce con scanners, endpoints de API y estructura de las reglas Semgrep.
 - `backend/tests/test_proxy.py` — proxy de secretos (F8): acceso permitido con inyección del secreto, denegados, lista blanca, fail-closed con proxy caído, redacción verificada con Gitleaks y rotación de tokens.
+- `backend/tests/test_verificadores.py` — verificación en vivo y evidencia (F11): modo HTTP (CORS, cookies, headers, errores, rate limit 429, TLS < 1.2), modo nube (describe/get de cifrado, S3 público, ciclo de vida, BD pública, TLS balanceador, CloudTrail, respaldos), autorización obligatoria, honestidad (requiere evidencia), bitácora y endpoints.
 
 ---
 
@@ -131,6 +134,10 @@ python -m pytest backend/tests/ -v # suite completa de backend, contrato OpenAPI
 | `POST` | `/api/analyze` | Encola análisis de repo GitHub público (429 por IP, 400 URL inválida) → 202 con `analysis_id`. Acepta `enable_ai_triage`. |
 | `GET` | `/api/analysis/<id>` | Estado y resultado (memoria + `storage/analyses/`). |
 | `GET` | `/api/analyses` | Lista los últimos 20 análisis persistidos. |
+| `GET` | `/api/analysis/<id>/report.md` | Reporte enriquecido (F9): SHA, fecha, hallazgos por severidad, estado de remediación, explicaciones y guía del agente redactor, datos faltantes declarados. |
+| `GET` | `/api/analysis/<id>/report.sarif` | Exportación SARIF 2.1.0 (F9): `level` mapeado desde severidad, huella parcial regla+archivo+línea, estado de remediación por resultado. |
+| `GET` | `/api/analysis/<id>/executive-summary` | Resumen ejecutivo de una página (F9) para la vista imprimible del dashboard. |
+| `GET` | `/api/analyses/compare?base&target` | Compara dos análisis del mismo repo (F9): nuevos, corregidos y persistentes por huella regla+archivo+línea; 400 si faltan parámetros o repos distintos, 404 si no existe alguno. |
 | `POST` | `/api/analysis/<id>/finding/<finding_id>/triage` | Registra decisión humana (verdadero, falso, incierto) con motivo obligatorio; suprime falsos positivos por huella SHA256. |
 | `GET` | `/api/analysis/<id>/review-queue` | Retorna los hallazgos inciertos para revisión humana ordenados por severidad. |
 | `GET` | `/api/triage/fingerprints` | Lista el diccionario de huellas de falsos positivos confirmados. |
@@ -203,6 +210,64 @@ python -m pytest backend/tests/ -v # suite completa de backend, contrato OpenAPI
   `.secai-ignore.yml` (lista o `ignore:` de globs); los hallazgos que matchean se
   excluyen del comentario y del check, con conteo en `pull_request.secai_ignore`.
 
+### `writer_agent.py` + `report_builder.py` + `compare_service.py` — reportes y redacción (F9)
+
+- **Exportación SARIF 2.1.0** (`report_builder.build_sarif_report`): `level`
+  mapeado desde la severidad (critical/high → `error`, medium → `warning`,
+  low → `note`), `partialFingerprints` con la huella regla+archivo+línea y
+  estado de remediación por resultado. También disponible en el CLI
+  (`reporte_seguridad.sarif`).
+- **Reporte enriquecido** (`report_builder.build_markdown_report`): SHA y rama,
+  fecha, hallazgos por severidad, estado de remediación (F6), explicación de
+  cada hallazgo, guía de buenas prácticas y sección de datos faltantes.
+- **Agente redactor determinista** (`writer_agent.py`): explica cada hallazgo y
+  arma la guía de buenas prácticas usando **solo hallazgos reales** del análisis
+  (agrupa por la categoría OWASP real y deriva cada práctica de la solución
+  real). Si falta un dato, lo declara ("Dato no disponible: ...") en lugar de
+  inventarlo; no agrega CWE, categorías ni recomendaciones sin respaldo. Sin
+  claves ni modelos: plantillas, como `fixer_agent`.
+- **Comparación de análisis** (`compare_service.compare_analyses`): dos
+  análisis del mismo repo → nuevos, corregidos y persistentes por huella
+  regla+archivo+línea (misma que el webhook); valida misma URL (tolera `.git`
+  y mayúsculas) y lanza `ValueError` si no.
+- **Resumen ejecutivo** (`report_builder.build_executive_summary`): datos para
+  la vista imprimible de una página (repo+SHA+fecha, KPIs de severidad,
+  remediación, top hallazgos con explicación, guía y datos faltantes).
+- Documentación operativa en `docs/`: `analizar.md`, `clasificacion-severidad.md`,
+  `agregar-herramienta.md`, `benchmark.md`, `controles.md` (índice en `docs/README.md`).
+
+### `controls/` + `rules/semgrep/` — revisión por control con IA (inventario v1.0)
+
+- 35 especificaciones YAML en `backend/controls/specs/` (controles 1–22 y C1–C13)
+  como única fuente de señales y criterios; esquema validado por `spec_loader`.
+- **C10–C13 solo aplican con SDK de LLM** (detección determinista en manifiestos);
+  si no, quedan `no aplica` con justificación registrada.
+- Agente revisor (`controls/reviewer_agent.py`): **solo lee**, recibe el paquete de
+  evidencia determinista (`evidence_builder.py`: stack, archivos de "dónde buscar",
+  endpoints, tope de tokens `SECURITY_CONTROLS_EVIDENCE_TOKENS`) y devuelve JSON
+  validado (`cumple|parcial|no cumple|no aplica`, evidencia archivo+línea,
+  razonamiento, confianza). Cada línea citada se verifica contra el archivo; si
+  alguna no existe, la respuesta **se descarta** (reintento → `descartado` → cola
+  Por revisar).
+- RBAC (12) e IDOR (C2) se juzgan **endpoint por endpoint** con cobertura
+  revisados/total (`CONTROLS_MAX_ENDPOINTS_REVIEW`, default 20).
+- Cruce con scanners: coincidencias suben confianza (+0.15); lo solo-agente y el
+  conflicto scanner-agente van a la cola Por revisar. Opt-in:
+  `ENABLE_CONTROLS_REVIEW` (default false).
+- Reglas Semgrep propias por control en `backend/rules/semgrep/<control>/`
+  (CORS comodín+credenciales, HTML crudo y SQL por concatenación, DEBUG y detalle
+  de excepciones, rate limit ausente en endpoints costosos, cookies sin flags y
+  tokens en localStorage, JWT largo/sin aud-iss, SSRF, tokens en logs, modelos sin
+  max_tokens) con `metadata.control`, multi-lenguaje y tests con caso detectable +
+  caso seguro (`semgrep --test` 9/9).
+- Benchmark con violaciones inyectadas (`bench/examples/controls-bench/`, ref
+  `repo-controles-violaciones`): recall 40% → **100%** y FPR 14.3% → **6.2%**
+  respecto de la corrida sin reglas propias, sin sumar FPs.
+- Pestaña **Controles** del dashboard: hoja de registro de 35 filas con
+  encabezado (aplicación, fecha, revisor, commit), filtros por estado/familia,
+  marca "solo agente" y estados de carga/vacío/error. Los veredictos nunca se
+  fabrican por ausencia de hallazgos.
+
 ### `proxy/` — proxy de secretos y APIs (F8)
 
 - Reverse proxy (Flask, puerto 5001) entre los agentes y los proveedores de modelos:
@@ -260,7 +325,10 @@ python -m pytest backend/tests/ -v # suite completa de backend, contrato OpenAPI
 
 SPA en pestañas: Overview (KPIs + progreso + encabezado de resultado con repo, rama y
 SHA), Hallazgos (tabla filtrable con mensaje accionable por falla), Benchmark (tarjetas
-por repo, tabla CWE, deltas, estados de carga/vacío/error) y Reporte (descarga MD/JSON).
+por repo, tabla CWE, deltas, estados de carga/vacío/error), Reporte (descarga MD/JSON),
+Resumen ejecutivo (vista imprimible de una página con `window.print` y estilos
+`@media print`) e Historial (agrupa por repo, compara dos análisis: nuevos, corregidos
+y persistentes por huella).
 
 ### `storage/`
 
@@ -293,6 +361,9 @@ baseline e historial del benchmark.
 | `PROXY_TOKENS_FILE` / `PROXY_TOKENS` | `backend/proxy/tokens.json` | Tokens limitados del proxy (solo hash SHA-256) — ver `docs/proxy.md`. |
 | `OSV_SCANNER_PATH`, `PIP_AUDIT_PATH`, `NPM_PATH`, `BANDIT_PATH`, `TRUFFLEHOG_PATH`, `CHECKOV_PATH`, `TRIVY_PATH`, `HADOLINT_PATH`, `ZIZMOR_PATH`, `SYFT_PATH`, `SCANCODE_PATH`, `SCORECARD_PATH`, `DEPCHECK_PATH`, `DEPTRY_PATH` | PATH | Rutas alternativas de los scanners opcionales (todos son opcionales: si faltan, `analysis.tools` los marca `"unavailable"`). |
 | `ENABLE_AI_TRIAGE` | `false` | Habilita el agente de triage con IA por variable de entorno (opt-in explícito). |
+| `ENABLE_CONTROLS_REVIEW` | `false` | Habilita la revisión por control con IA al analizar (opt-in explícito). |
+| `CONTROLS_MAX_ENDPOINTS_REVIEW` | `20` | Tope de endpoints juzgados por el agente en RBAC/IDOR. |
+| `SECURITY_CONTROLS_EVIDENCE_TOKENS` | `6000` | Tope de tokens del paquete de evidencia de controles. |
 | `OPENAI_API_KEY` | (opcional) | Habilita proveedor OpenAI para triage y comparativa multi-modelo en benchmark. |
 | `ANTHROPIC_API_KEY` | (opcional) | Habilita proveedor Claude para triage y comparativa multi-modelo en benchmark. |
 

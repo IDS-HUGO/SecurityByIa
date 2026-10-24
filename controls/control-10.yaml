@@ -1,0 +1,35 @@
+id: "10"
+nombre: Session IDs almacenados en cookies seguras
+categoria_owasp: A07
+criticidad_referencia: ALTO
+familia: Acceso y autenticación
+metodo: repo
+donde_buscar:
+- '**/*.py'
+- '**/*.js'
+- '**/*.ts'
+- '**/*.tsx'
+senales_incumplimiento:
+- Falta Secure, HttpOnly o SameSite
+- tokens de sesión guardados en localStorage
+- dominio/ruta más amplio de lo necesario
+falsos_positivos:
+- Cookie sin HttpOnly que no contiene el session ID (preferencias o UI), no es cookie de sesión.
+- SameSite=Lax justificado por redirección OAuth, caso permitido por el propio control.
+herramientas:
+- revision-manual
+ia_revisa: Que las cookies de sesión tengan todos los flags de seguridad, juzgando la ausencia de Secure, HttpOnly o SameSite,
+  tokens de sesión guardados en localStorage y dominio/ruta más amplios de lo necesario.
+remediacion:
+- Flag Secure en todas las cookies de sesión.
+- Flag HttpOnly y SameSite Strict (o Lax si redirección OAuth lo requiere).
+- Usar prefijo __Host- para cookies críticas.
+verificacion: Set-Cookie incluye Secure; HttpOnly; SameSite=Strict en cookies de sesión.
+criterio_aceptacion: Set-Cookie incluye Secure; HttpOnly; SameSite=Strict en cookies de sesión.
+fragmentos_regex:
+- '(?i)set[-_]cookie'
+- 'localStorage'
+- '(?i)samesite'
+- '(?i)httponly'
+- '__Host-'
+aplica_con_llm: false

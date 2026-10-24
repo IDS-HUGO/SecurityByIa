@@ -76,6 +76,7 @@ def _finding_from_semgrep(raw: Dict[str, Any], index: int, root: str) -> Dict[st
         "status": "open",
         "code": extra.get("lines", ""),
         "code_context": context,
+        **({"control": str(metadata["control"])} if metadata.get("control") else {}),
     })
 
 
@@ -638,6 +639,15 @@ def analyze_directory(
     semgrep_cmd = [semgrep_bin]
     if rules_file.exists():
         semgrep_cmd.extend(["--config", str(rules_file)])
+
+    # Reglas propias de Semgrep por control (F10)
+    semgrep_rules_dir = Path(__file__).resolve().parent / "rules" / "semgrep"
+    if not semgrep_rules_dir.exists():
+        semgrep_rules_dir = Path(__file__).resolve().parent.parent / "rules" / "semgrep"
+    if semgrep_rules_dir.exists():
+        for r_file in sorted(semgrep_rules_dir.rglob("rule*.yml")):
+            semgrep_cmd.extend(["--config", str(r_file)])
+
     semgrep_cmd.extend(["--config=p/owasp-top-ten", "--json", "--quiet", target_dir])
 
     progress("analyzing", 35, "Running Semgrep rules")
@@ -743,12 +753,22 @@ def analyze_directory(
     if enable_ai:
         _enrich_with_gemini(findings)
 
+    progress("processing", 95, "Evaluating security controls inventory")
+    url = repo_url or f"local://{os.path.basename(target_dir)}"
+    repo_name = url.rstrip("/").split("/")[-1].removesuffix(".git")
+    try:
+        from controls.review_service import review_controls
+        controls_review = review_controls(Path(target_dir), {
+            "repository": {"url": url, "name": repo_name},
+            "findings": findings,
+        })
+    except Exception as exc:
+        controls_review = {"disponible": False,
+                           "motivo": f"Error en la revisión de controles: {exc}"}
+
     progress("completed", 100, "Analysis complete")
     summary = {level: sum(item["severity"] == level for item in findings)
                for level in ("critical", "high", "medium", "low")}
-
-    url = repo_url or f"local://{os.path.basename(target_dir)}"
-    repo_name = url.rstrip("/").split("/")[-1].removesuffix(".git")
 
     return {
         "status": "completed",
@@ -758,6 +778,7 @@ def analyze_directory(
         "repository": {"url": url, "name": repo_name},
         "summary": {"total": len(findings), **summary},
         "findings": findings,
+        "controls_review": controls_review,
         "markdown_report": _markdown(findings, url),
         "analysis": {
             "tools": {"semgrep": "completed", "gitleaks": gitleaks_status,
@@ -868,6 +889,13 @@ def analyze_repo(
             repo_info["commit"] = commit
         if branch:
             repo_info["branch"] = branch
+        # El encabezado de la revisión de controles registra el commit revisado.
+        controls_review = result.get("controls_review")
+        if isinstance(controls_review, dict) and controls_review.get("disponible"):
+            if commit and not controls_review.get("commit"):
+                controls_review["commit"] = commit
+            if branch and not controls_review.get("branch"):
+                controls_review["branch"] = branch
         return result
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)
@@ -898,6 +926,12 @@ def main() -> None:
             json.dump(result, output, ensure_ascii=False, indent=2)
         with open("reporte_seguridad.md", "w", encoding="utf-8") as output:
             output.write(result["markdown_report"])
+        try:
+            import report_builder
+            with open("reporte_seguridad.sarif", "w", encoding="utf-8") as output:
+                json.dump(report_builder.build_sarif_report(result), output, ensure_ascii=False, indent=2)
+        except Exception:  # el SARIF es un extra del CLI: nunca rompe el análisis
+            pass
         print(json.dumps(result["summary"], ensure_ascii=False))
     except RuntimeError as exc:
         parser.error(str(exc))

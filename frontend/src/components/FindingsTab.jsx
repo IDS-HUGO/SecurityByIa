@@ -49,7 +49,6 @@ export default function FindingsTab({
     const map = {};
     findings.forEach((f) => {
       const cat = f.owasp || 'A05:2021 - Security Misconfiguration';
-      // Short label: e.g. "A01:2021"
       const short = cat.split(' - ')[0] || cat;
       map[short] = (map[short] || 0) + 1;
     });
@@ -141,11 +140,11 @@ export default function FindingsTab({
   return (
     <div className="tab-pane active">
       {/* Clickable Summary Bar by Severity and OWASP Category */}
-      <section className="card" style={{ marginBottom: '1.25rem', padding: '1rem 1.25rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+      <section className="card" style={{ marginBottom: '16px', padding: '16px 20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
           <div>
             <span className="eyebrow">RESUMEN CLICABLE DE HALLAZGOS</span>
-            <p style={{ margin: '0.2rem 0 0', fontSize: '0.85rem', color: 'var(--muted-color)' }}>
+            <p style={{ margin: '2px 0 0', fontSize: '13px', color: 'var(--text-muted)' }}>
               Hacé clic en cualquier severidad o categoría OWASP para filtrar la tabla automáticamente.
             </p>
           </div>
@@ -153,7 +152,7 @@ export default function FindingsTab({
             <button
               type="button"
               className="btn-secondary"
-              style={{ fontSize: '0.8rem', padding: '0.35rem 0.75rem' }}
+              style={{ height: '30px', padding: '0 12px', fontSize: '12px' }}
               onClick={clearFilters}
             >
               Limpiar filtros
@@ -162,7 +161,7 @@ export default function FindingsTab({
         </div>
 
         {/* Severities row */}
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '10px' }}>
           {['critical', 'high', 'medium', 'low'].map((sev) => {
             const count = severityCounts[sev];
             const isSelected = activeFilterSev === sev;
@@ -183,15 +182,15 @@ export default function FindingsTab({
 
         {/* OWASP categories row */}
         {owaspCounts.length > 0 && (
-          <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--muted-color)', marginRight: '0.25rem' }}>OWASP:</span>
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', marginRight: '4px' }}>OWASP:</span>
             {owaspCounts.map(([catKey, count]) => {
               const isSelected = activeFilterOwasp === catKey;
               return (
                 <button
                   key={catKey}
                   type="button"
-                  className={`summary-pill owasp-pill ${isSelected ? 'active-filter' : ''}`}
+                  className={`summary-pill ${isSelected ? 'active-filter' : ''}`}
                   onClick={() => setActiveFilterOwasp(isSelected ? null : catKey)}
                 >
                   <span>{catKey}</span>
@@ -204,57 +203,61 @@ export default function FindingsTab({
       </section>
 
       {/* Filter Toolbar */}
-      <section className="card" style={{ marginBottom: '1.25rem', padding: '0.85rem 1.25rem' }}>
-        <div className="filter-bar" style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+      <section className="card" style={{ marginBottom: '16px', padding: '14px 20px' }}>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
           <button
             type="button"
             className="btn-secondary"
             onClick={() => setReviewQueueActive(!reviewQueueActive)}
             style={{
-              borderColor: reviewQueueActive ? 'var(--warning-color, #f59e0b)' : 'var(--border-color)',
-              background: reviewQueueActive ? 'rgba(245, 158, 11, 0.15)' : 'transparent',
-              color: reviewQueueActive ? 'var(--warning-color, #f59e0b)' : 'var(--text-color)',
+              borderColor: reviewQueueActive ? 'var(--amber)' : 'var(--border-medium)',
+              background: reviewQueueActive ? 'var(--amber-bg)' : 'transparent',
+              color: reviewQueueActive ? 'var(--amber)' : 'var(--text-main)',
               fontWeight: 600,
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '0.4rem',
+              gap: '6px',
             }}
           >
             <span>Cola Por revisar</span>
             <span style={{
-              background: reviewQueueCount > 0 ? '#f59e0b' : 'var(--muted-color)',
-              color: '#000',
-              borderRadius: '9999px',
-              padding: '0.1rem 0.45rem',
-              fontSize: '0.75rem',
+              background: reviewQueueCount > 0 ? 'var(--amber)' : 'var(--border-medium)',
+              color: reviewQueueCount > 0 ? '#ffffff' : 'var(--text-secondary)',
+              borderRadius: '999px',
+              padding: '1px 7px',
+              fontSize: '11px',
               fontWeight: 700,
             }}>
               {reviewQueueCount}
             </span>
           </button>
 
-          <div className="filter-group">
-            <label htmlFor="tool-filter">Herramienta:</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <label htmlFor="tool-filter" style={{ whiteSpace: 'nowrap' }}>Herramienta:</label>
             <select
               id="tool-filter"
               value={selectedTool}
               onChange={(e) => setSelectedTool(e.target.value)}
               disabled={reviewQueueActive}
+              className="custom-select"
+              style={{ width: 'auto', minWidth: '150px' }}
             >
-              <option value="all">Todas las herramientas</option>
+              <option value="all">Todas</option>
               {distinctTools.map((t) => (
                 <option key={t} value={t}>{t}</option>
               ))}
             </select>
           </div>
 
-          <div className="filter-group">
-            <label htmlFor="type-filter">Tipo de hallazgo:</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <label htmlFor="type-filter" style={{ whiteSpace: 'nowrap' }}>Tipo:</label>
             <select
               id="type-filter"
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value)}
               disabled={reviewQueueActive}
+              className="custom-select"
+              style={{ width: 'auto', minWidth: '130px' }}
             >
               <option value="all">Todos los tipos</option>
               <option value="code">Código</option>
@@ -263,28 +266,32 @@ export default function FindingsTab({
             </select>
           </div>
 
-          <div className="filter-group">
-            <label htmlFor="verdict-filter">Veredicto Triage:</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <label htmlFor="verdict-filter" style={{ whiteSpace: 'nowrap' }}>Triage:</label>
             <select
               id="verdict-filter"
               value={selectedVerdict}
               onChange={(e) => setSelectedVerdict(e.target.value)}
               disabled={reviewQueueActive}
+              className="custom-select"
+              style={{ width: 'auto', minWidth: '130px' }}
             >
-              <option value="all">Todos los veredictos</option>
+              <option value="all">Todos</option>
               <option value="verdadero">Verdadero</option>
               <option value="falso">Falso positivo</option>
               <option value="incierto">Incierto</option>
             </select>
           </div>
 
-          <div className="filter-group">
-            <label htmlFor="remediation-filter">Remediación (F6):</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <label htmlFor="remediation-filter" style={{ whiteSpace: 'nowrap' }}>Remediación:</label>
             <select
               id="remediation-filter"
               value={selectedRemStatus}
               onChange={(e) => setSelectedRemStatus(e.target.value)}
               disabled={reviewQueueActive}
+              className="custom-select"
+              style={{ width: 'auto', minWidth: '140px' }}
             >
               <option value="all">Todos los estados</option>
               <option value="open">Abierto</option>
@@ -296,9 +303,9 @@ export default function FindingsTab({
             </select>
           </div>
 
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span style={{ fontSize: '0.85rem', color: 'var(--muted-color)' }}>
-              Mostrando {filteredFindings.length} de {findings.length} hallazgos
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+              Mostrando <strong>{filteredFindings.length}</strong> de {findings.length} hallazgos
             </span>
           </div>
         </div>
@@ -306,7 +313,7 @@ export default function FindingsTab({
 
       {/* Findings Table */}
       <section className="card">
-        <div style={{ overflowX: 'auto' }}>
+        <div className="table-wrap">
           {filteredFindings.length > 0 ? (
             <table className="findings-table">
               <thead>
@@ -317,8 +324,8 @@ export default function FindingsTab({
                   <th>CWE</th>
                   <th>OWASP</th>
                   <th>Detectado por</th>
-                  <th>Triage (F5)</th>
-                  <th>Remediación (F6)</th>
+                  <th>Triage IA</th>
+                  <th>Remediación</th>
                   <th style={{ textAlign: 'right' }}>Acción</th>
                 </tr>
               </thead>
@@ -330,12 +337,12 @@ export default function FindingsTab({
                   const vClass = verdict === 'verdadero' ? 'completed' : verdict === 'falso' ? 'queued' : 'running';
                   const remStatus = (item.remediation?.status || 'open').toLowerCase();
                   const remStyles = {
-                    verified: { bg: '#166534', color: '#86efac', text: 'VERIFICADO' },
-                    approved: { bg: '#065f46', color: '#6ee7b7', text: 'APROBADO' },
-                    discarded: { bg: '#991b1b', color: '#fca5a5', text: 'DESCARTADO' },
-                    rejected: { bg: '#881337', color: '#fda4af', text: 'RECHAZADO' },
-                    patch_proposed: { bg: '#854d0e', color: '#fde047', text: 'PROPUESTO' },
-                    open: { bg: '#334155', color: '#cbd5e1', text: 'ABIERTO' },
+                    verified: { bg: 'var(--emerald-bg)', color: 'var(--emerald)', border: 'var(--emerald-border)', text: 'VERIFICADO' },
+                    approved: { bg: 'var(--emerald-bg)', color: 'var(--emerald)', border: 'var(--emerald-border)', text: 'APROBADO' },
+                    discarded: { bg: 'var(--crimson-bg)', color: 'var(--crimson)', border: 'var(--crimson-border)', text: 'DESCARTADO' },
+                    rejected: { bg: 'var(--crimson-bg)', color: 'var(--crimson)', border: 'var(--crimson-border)', text: 'RECHAZADO' },
+                    patch_proposed: { bg: 'var(--amber-bg)', color: 'var(--amber)', border: 'var(--amber-border)', text: 'PROPUESTO' },
+                    open: { bg: 'var(--bg-inset)', color: 'var(--text-secondary)', border: 'var(--border-medium)', text: 'ABIERTO' },
                   };
                   const remBadge = remStyles[remStatus] || remStyles.open;
                   return (
@@ -347,7 +354,7 @@ export default function FindingsTab({
                       </td>
                       <td>
                         <strong>{item.title || item.rule}</strong>
-                        <div style={{ fontSize: '0.78rem', color: 'var(--muted-color)' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
                           <code>{item.rule}</code>
                         </div>
                       </td>
@@ -357,21 +364,21 @@ export default function FindingsTab({
                       <td>
                         <span className="meta-tag">{cweStr}</span>
                       </td>
-                      <td style={{ fontSize: '0.82rem' }}>
+                      <td style={{ fontSize: '12px' }}>
                         {item.owasp || 'A05:2021'}
                       </td>
                       <td>
-                        <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                           {tools.map((t) => (
                             <span key={t} className="tool-tag">{t}</span>
                           ))}
                         </div>
                       </td>
                       <td>
-                        <span className={`status status-${vClass}`} style={{ fontSize: '0.75rem', fontWeight: 600 }}>
+                        <span className={`status status-${vClass}`}>
                           {verdict.toUpperCase()}
                         </span>
-                        <div style={{ fontSize: '0.7rem', color: 'var(--muted-color)' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
                           {item.triage?.decided_by || 'regla'}
                         </div>
                       </td>
@@ -379,9 +386,10 @@ export default function FindingsTab({
                         <span style={{
                           background: remBadge.bg,
                           color: remBadge.color,
-                          padding: '0.15rem 0.5rem',
+                          border: `1px solid ${remBadge.border}`,
+                          padding: '2px 7px',
                           borderRadius: '4px',
-                          fontSize: '0.72rem',
+                          fontSize: '11px',
                           fontWeight: 700,
                           textTransform: 'uppercase',
                           display: 'inline-block',
@@ -393,7 +401,7 @@ export default function FindingsTab({
                         <button
                           type="button"
                           className="btn-secondary"
-                          style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem' }}
+                          style={{ height: '30px', padding: '0 10px', fontSize: '12px' }}
                           onClick={() => setDetailFinding(item)}
                         >
                           Ver detalle
@@ -405,7 +413,7 @@ export default function FindingsTab({
               </tbody>
             </table>
           ) : (
-            <div className="empty-state" style={{ padding: '4rem 1rem' }}>
+            <div className="empty-state">
               <p>
                 {findings.length === 0
                   ? 'No hay hallazgos para mostrar. Iniciá un análisis de repositorio.'
@@ -415,7 +423,7 @@ export default function FindingsTab({
                 <button
                   type="button"
                   className="btn-secondary"
-                  style={{ marginTop: '0.5rem' }}
+                  style={{ marginTop: '10px' }}
                   onClick={clearFilters}
                 >
                   Restablecer filtros

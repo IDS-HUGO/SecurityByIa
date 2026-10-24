@@ -1,0 +1,36 @@
+id: "18"
+nombre: Arquitectura segmentada entre componentes y tenants
+categoria_owasp: A05
+criticidad_referencia: MEDIO
+familia: Infraestructura y nube
+metodo: nube
+donde_buscar:
+- '**/*.tf'
+senales_incumplimiento:
+- publicly_accessible = true en DB
+- DB en subred pública
+- sin NACLs entre capas
+- ambientes compartiendo VPC/cuenta
+falsos_positivos:
+- Subredes etiquetadas como públicas que solo contienen el balanceador, con la DB en subred privada y acceso restringido
+  a la subred de la app.
+- publicly_accessible = false ya configurado (control cumplido).
+herramientas:
+- checkov
+- aws-cli
+ia_revisa: Que exista aislamiento entre capas (borde, app, datos) y que la DB no sea accesible públicamente, juzgando publicly_accessible
+  en true, DB en subred pública, ausencia de NACLs entre capas y ambientes compartiendo VPC/cuenta.
+remediacion:
+- publicly_accessible = false.
+- Subredes privadas para app y subred dedicada para DB.
+- NACLs entre capas.
+verificacion: aws rds describe-db-instances --query 'DBInstances[].PubliclyAccessible' devuelve false; DB solo accesible desde
+  subred de app.
+criterio_aceptacion: aws rds describe-db-instances --query 'DBInstances[].PubliclyAccessible' devuelve false; DB solo accesible
+  desde subred de app.
+fragmentos_regex:
+- 'publicly_accessible'
+- 'aws_db_subnet_group|aws_subnet'
+- '(?i)nacl|network_acl'
+- 'aws_vpc'
+aplica_con_llm: false

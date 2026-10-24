@@ -9,11 +9,14 @@ import FindingsTab from './components/FindingsTab';
 import BenchmarkTab from './components/BenchmarkTab';
 import ReportTab from './components/ReportTab';
 import ProxyTab from './components/ProxyTab';
+import ExecutiveTab from './components/ExecutiveTab';
+import HistoryTab from './components/HistoryTab';
+import ControlsTab from './components/ControlsTab';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState(() => {
     const hash = window.location.hash.replace('#', '');
-    return ['overview', 'findings', 'benchmark', 'report', 'proxy'].includes(hash) ? hash : 'overview';
+    return ['overview', 'findings', 'benchmark', 'report', 'proxy', 'executive', 'history', 'controls'].includes(hash) ? hash : 'overview';
   });
 
   const [currentAnalysis, setCurrentAnalysis] = useState(null);
@@ -270,6 +273,25 @@ export default function App() {
 
         {activeTab === 'report' && (
           <ReportTab
+            currentAnalysis={currentAnalysis}
+          />
+        )}
+
+        {activeTab === 'executive' && (
+          <ExecutiveTab
+            currentAnalysis={currentAnalysis}
+          />
+        )}
+
+        {activeTab === 'history' && (
+          <HistoryTab
+            recentAnalyses={recentAnalyses}
+            onLoadAnalysis={handleLoadAnalysis}
+          />
+        )}
+
+        {activeTab === 'controls' && (
+          <ControlsTab
             currentAnalysis={currentAnalysis}
           />
         )}

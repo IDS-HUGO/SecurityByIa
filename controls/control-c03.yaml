@@ -1,0 +1,32 @@
+id: "C3"
+nombre: Validación de entrada y carga de archivos
+categoria_owasp: 'Ref: A03/A04'
+criticidad_referencia: COMPLEMENTARIO
+familia: Validación e inyección
+metodo: repo
+donde_buscar:
+- '**/routes/**'
+- '**/routers/**'
+- '**/*.py'
+senales_incumplimiento:
+- Sin tamaño máximo de payload definido
+- Sin validación de tipos de datos de entrada
+- Carga de archivos sin validar tipo real, tamaño, ubicación fuera de webroot ni escaneo de malware
+falsos_positivos:
+- Límite de payload aplicado en el proxy/WAF frente a la aplicación (no visible en el código).
+- Uploads ya almacenados fuera del webroot con validación de tipo real implementada.
+herramientas:
+- revision-manual
+ia_revisa: Que las entradas estén acotadas, juzgando si falta tamaño máximo de payload, validación de tipos de datos, y si
+  la carga de archivos verifica tipo real, tamaño, almacenamiento fuera del webroot y escaneo de malware.
+remediacion:
+- Definir tamaño máximo de payload y validar tipos de datos.
+- Validar tipo real y tamaño de archivos, almacenarlos fuera del webroot y escanearlos por malware.
+verificacion: Enviar payloads grandes y archivos con extensión falsa o contenido malicioso.
+criterio_aceptacion: Los payloads grandes y archivos con extensión falsa o contenido malicioso son rechazados.
+fragmentos_regex:
+- '(?i)max[_ -]?(size|length|payload)'
+- '(?i)upload'
+- '(?i)content[_ -]?type|mime'
+- '(?i)webroot|web_root'
+aplica_con_llm: false

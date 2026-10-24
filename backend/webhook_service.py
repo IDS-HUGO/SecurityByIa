@@ -605,6 +605,14 @@ def publish_pr_outputs(pr: Dict[str, Any], result: Dict[str, Any]) -> Dict[str, 
         outcomes["check"] = "published"
     except Exception:
         outcomes["check"] = "error"
+
+    # La corrida queda registrada para detectar hallazgos NUEVOS en la próxima
+    # (solo cuando hay token: sin publicación no hay comparación de nuevos).
+    try:
+        save_current_fingerprints(pr["full_name"], pr["number"],
+                                  str(pr.get("head_sha") or ""), findings)
+    except Exception:
+        pass
     return outcomes
 
 
@@ -658,8 +666,6 @@ def run_pr_analysis(pr: Dict[str, Any], analysis_id: str,
         # El id va antes de publicar: el comentario enlaza al reporte de este análisis.
         result["analysis_id"] = analysis_id
         result["github_publishing"] = publish_pr_outputs(pr, result)
-        save_current_fingerprints(pr["full_name"], pr["number"], head_sha,
-                                  result.get("findings") or [])
         return result
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)
