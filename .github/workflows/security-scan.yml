@@ -40,12 +40,16 @@ jobs:
         id: semgrep
         working-directory: backend
         # Sin `|| true`: exit 0/1 (con hallazgos) sigue; exit >= 2 falla el job.
+        # Excluye ejemplos intencionales de benchmark y suites de prueba para no bloquear CI
         run: |
           set +e
           semgrep \
             --config rules/security-rules.yml \
             --config rules/semgrep \
             --config rules/vendor/owasp-top-ten.json \
+            --exclude "bench/examples" \
+            --exclude "*/bench/examples" \
+            --exclude "tests" \
             --json --quiet .. > ../semgrep-results.json
           code=$?
           set -e

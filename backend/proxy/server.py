@@ -404,6 +404,114 @@ def execute_cloud_command():
     }), (200 if exit_code == 0 else 200)
 
 
+# --- F8 Extension: Acceso Delegado a Webs Privadas para Agentes ---
+
+@app.post("/delegated/session/create")
+def create_delegated_session():
+    """Permite a un agente solicitar un token de sesión efímero para un sitio."""
+    token_record = _authenticate(request.headers.get("Authorization", ""))
+    if token_record is None:
+        return jsonify({"error": "Token de proxy inválido."}), 401
+
+    payload = request.get_json(silent=True) or {}
+    site_id = payload.get("site_id")
+    if not site_id:
+        return jsonify({"error": "Falta site_id."}), 400
+
+    from proxy.delegated_auth import DelegatedAuthVault, log_delegated_audit
+    vault = DelegatedAuthVault()
+    try:
+        session_info = vault.create_ephemeral_session(
+            site_id=site_id,
+            agent_id=str(token_record.get("id", "agent")),
+            ttl_seconds=payload.get("ttl_seconds", 1800),
+        )
+        log_delegated_audit(
+            agent_id=str(token_record.get("id", "agent")),
+            site_id=site_id,
+            action="session_created",
+            status="success",
+            details={"session_id": session_info["session_id"]},
+        )
+        return jsonify({"status": "ok", "session": session_info}), 200
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 404
+
+
+@app.post("/delegated/session/login")
+def execute_delegated_login():
+    """Ejecuta el login de confianza inyectando credenciales y TOTP sin exponerlos al agente."""
+    token_record = _authenticate(request.headers.get("Authorization", ""))
+    if token_record is None:
+        return jsonify({"error": "Token de proxy inválido."}), 401
+
+    payload = request.get_json(silent=True) or {}
+    delegated_token = payload.get("delegated_token")
+    login_url = payload.get("login_url")
+    if not delegated_token or not login_url:
+        return jsonify({"error": "Faltan delegated_token o login_url."}), 400
+
+    from proxy.delegated_auth import DelegatedAuthVault, TrustedBrowserLoginAutomator, log_delegated_audit
+    vault = DelegatedAuthVault()
+    sess = vault.validate_session(delegated_token)
+    if not sess:
+        return jsonify({"error": "Sesión delegada inválida o expirada."}), 403
+
+    automator = TrustedBrowserLoginAutomator(vault)
+    try:
+        auth_res = automator.perform_login_flow(sess["site_id"], login_url)
+        # Se guarda el estado en el vault y se devuelve solo confirmación y headers opaque
+        vault.update_session_state(sess["session_id"], cookies={"session_id": auth_res.get("session_cookie", "")})
+        log_delegated_audit(
+            agent_id=sess["agent_id"],
+            site_id=sess["site_id"],
+            action="login_performed",
+            status="success",
+            details={"session_id": sess["session_id"]},
+        )
+        return jsonify({
+            "status": "authenticated",
+            "session_id": sess["session_id"],
+            "authenticated": True,
+            "message": "Login delegado ejecutado exitosamente. Credenciales inyectadas de forma segura."
+        }), 200
+    except Exception as e:
+        log_delegated_audit(
+            agent_id=sess["agent_id"],
+            site_id=sess["site_id"],
+            action="login_performed",
+            status="error",
+            details={"error": str(e)},
+        )
+        return jsonify({"error": f"Fallo al ejecutar login delegado: {str(e)}"}), 502
+
+
+@app.post("/delegated/session/revoke")
+def revoke_delegated_session():
+    """Revoca inmediatamente la sesión delegada."""
+    token_record = _authenticate(request.headers.get("Authorization", ""))
+    if token_record is None:
+        return jsonify({"error": "Token de proxy inválido."}), 401
+
+    payload = request.get_json(silent=True) or {}
+    session_id = payload.get("session_id")
+    if not session_id:
+        return jsonify({"error": "Falta session_id."}), 400
+
+    from proxy.delegated_auth import DelegatedAuthVault, log_delegated_audit
+    vault = DelegatedAuthVault()
+    ok = vault.revoke_session(session_id)
+    log_delegated_audit(
+        agent_id=str(token_record.get("id", "agent")),
+        site_id="unknown",
+        action="session_revoked",
+        status="success" if ok else "not_found",
+        details={"session_id": session_id},
+    )
+    return jsonify({"status": "ok", "revoked": ok}), 200
+
+
+
 def main() -> None:
     app.run(
         host=os.environ.get("PROXY_HOST", "127.0.0.1"),
