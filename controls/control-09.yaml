@@ -1,0 +1,35 @@
+id: "9"
+nombre: Proceso automatizado para validar configuraciones de seguridad
+categoria_owasp: A05
+criticidad_referencia: ALTO
+familia: CI/CD e integridad
+metodo: repo
+donde_buscar:
+- '**/.github/workflows/*.yml'
+- '**/.github/workflows/*.yaml'
+- '**/scripts/**'
+senales_incumplimiento:
+- Escaneos manuales/puntuales
+- pipeline no falla ante hallazgos críticos
+- sin reportes de cumplimiento
+falsos_positivos:
+- Escaneo programado además del puntual (no es escaneo solo manual).
+- Pipeline que falla ante críticos y continúa con severidades bajas/medias por política documentada.
+herramientas:
+- semgrep
+- codeql
+- revision-manual
+ia_revisa: Que el pipeline ejecute SAST, SCA, detección de secretos y escaneo IaC bloqueando despliegues inseguros, juzgando
+  escaneos manuales o puntuales, ausencia de gate ante hallazgos críticos y falta de reportes de cumplimiento.
+remediacion:
+- SAST (Semgrep, CodeQL) en CI/CD.
+- SCA, secretos y validación IaC en cada PR.
+- Definir gate por severidad y reportes automáticos.
+verificacion: Introducir un hallazgo crítico de prueba en una rama; verificar que el pipeline falla.
+criterio_aceptacion: El pipeline falla ante un hallazgo crítico de prueba introducido en una rama.
+fragmentos_regex:
+- '(?i)semgrep'
+- '(?i)codeql'
+- '(?i)\bsca\b'
+- '(?i)(secretos|secrets)'
+aplica_con_llm: false

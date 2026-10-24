@@ -1,0 +1,34 @@
+id: "15"
+nombre: Permisos restrictivos de almacenamiento cloud (S3)
+categoria_owasp: A01
+criticidad_referencia: MEDIO
+familia: Infraestructura y nube
+metodo: nube
+donde_buscar:
+- '**/*.tf'
+senales_incumplimiento:
+- 'Policy con Principal: "*"'
+- Block Public Access deshabilitado
+- sin aws:SecureTransport ni cifrado servidor
+falsos_positivos:
+- Principal de servicio de AWS (no comodín de cuenta/usuario) en la política del bucket.
+- Bucket de hosting estático de assets públicos por diseño, sin datos sensibles, con el resto de bloqueos activos.
+herramientas:
+- checkov
+- aws-cli
+ia_revisa: Que los buckets no permitan acceso público ni políticas abiertas, juzgando Principal comodín, Block Public Access
+  deshabilitado y ausencia de aws:SecureTransport o de cifrado de servidor.
+remediacion:
+- Restringir Principal a ARNs específicos.
+- Habilitar Block Public Access a nivel cuenta y bucket.
+- Denegar acceso sin TLS y exigir SSE.
+verificacion: 'aws s3api get-bucket-policy-status devuelve IsPublic: false; get-public-access-block muestra 4 bloqueos activos.'
+criterio_aceptacion: 'aws s3api get-bucket-policy-status devuelve IsPublic: false; get-public-access-block muestra 4 bloqueos
+  activos.'
+fragmentos_regex:
+- '(?i)principal'
+- '(?i)block[_ -]?public[_ -]?access'
+- 'aws:SecureTransport'
+- 'aws_s3_bucket'
+- '(?i)\bsse\b'
+aplica_con_llm: false

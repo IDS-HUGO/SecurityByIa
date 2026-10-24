@@ -1,0 +1,32 @@
+id: "C5"
+nombre: Cifrado en tránsito interno
+categoria_owasp: 'Ref: A02'
+criticidad_referencia: COMPLEMENTARIO
+familia: Secretos y criptografía
+metodo: repo
+donde_buscar:
+- '**/*.tf'
+- '**/*.py'
+- '**/.env*'
+senales_incumplimiento:
+- Sin rds.force_ssl (o en false) en la base de datos
+- Conexiones a la base de datos sin sslmode=require
+- Comunicación entre microservicios sin TLS
+falsos_positivos:
+- sslmode=require ya presente en la cadena de conexión a la base de datos.
+- Comunicación interna cifrada con TLS por un componente del entorno (no visible en el repositorio).
+herramientas:
+- revision-manual
+- aws-cli
+ia_revisa: Que exista TLS entre la app y la base de datos (rds.force_ssl, sslmode=require) y entre microservicios, juzgando
+  conexiones a la base de datos y entre servicios sin cifrado.
+remediacion:
+- Habilitar rds.force_ssl y usar sslmode=require en la conexión a la base de datos.
+- Cifrar con TLS la comunicación entre microservicios.
+verificacion: Verificar parámetro y probar que conexión sin TLS sea rechazada.
+criterio_aceptacion: El parámetro de TLS forzado está activo y la conexión sin TLS es rechazada.
+fragmentos_regex:
+- 'rds\.force_ssl'
+- 'sslmode'
+- '(?i)\btls\b'
+aplica_con_llm: false

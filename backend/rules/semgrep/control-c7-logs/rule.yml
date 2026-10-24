@@ -1,0 +1,67 @@
+rules:
+  # C7: Datos sensibles en logs y trazas (inventario v1.0)
+  - id: py-log-sensitive-ctl7
+    languages: [python]
+    message: "C7: registro de datos sensibles (token/contraseña/secret/authorization) en logs o trazas; scrubbeá el dato antes de loguearlo."
+    severity: ERROR
+    metadata:
+      control: "C7"
+      inventory: "inventario-controles-v1.0"
+      owasp: "A09:2021 - Security Logging and Monitoring Failures"
+      cwe: ["CWE-532"]
+      criticidad: "COMPLEMENTARIO"
+    patterns:
+      - pattern-either:
+          - pattern: logging.$LEVEL(f"...{$S}...", ...)
+          - pattern: $LOGGER.$LEVEL(f"...{$S}...", ...)
+          - pattern: print($S, ...)
+      - metavariable-regex:
+          metavariable: $S
+          regex: "(?i).*(password|passwd|secret|token|api_?key|authorization).*"
+
+  - id: py-log-sensitive-literal-ctl7
+    languages: [python]
+    message: "C7: el mensaje de log formateado interpola un dato sensible (password=, token=...); eliminá el valor del log."
+    severity: ERROR
+    metadata:
+      control: "C7"
+      inventory: "inventario-controles-v1.0"
+      owasp: "A09:2021 - Security Logging and Monitoring Failures"
+      cwe: ["CWE-532"]
+      criticidad: "COMPLEMENTARIO"
+    patterns:
+      - pattern-either:
+          - pattern: logging.$LEVEL($MSG, ...)
+          - pattern: $LOGGER.$LEVEL($MSG, ...)
+      - metavariable-regex:
+          metavariable: $MSG
+          regex: '"[^"]*(?i)(password|passwd|secret|token|api_?key|authorization)[^"]*%[sd][^"]*"'
+
+  - id: js-log-sensitive-ctl7
+    languages: [javascript]
+    message: "C7: console/logger registra variables sensibles (token/password/secret/authorization); scrubbeá antes de registrar."
+    severity: ERROR
+    metadata:
+      control: "C7"
+      inventory: "inventario-controles-v1.0"
+      owasp: "A09:2021 - Security Logging and Monitoring Failures"
+      cwe: ["CWE-532"]
+      criticidad: "COMPLEMENTARIO"
+    patterns:
+      - pattern-either:
+          - pattern: console.log($S, ...)
+          - pattern: console.$LEVEL($S, ...)
+          - pattern: $LOGGER.error($S, ...)
+          - pattern: $LOGGER.warn($S, ...)
+          - pattern: $LOGGER.warning($S, ...)
+          - pattern: $LOGGER.info($S, ...)
+          - pattern: $LOGGER.debug($S, ...)
+          - pattern: $LOGGER.log($S, ...)
+          - pattern: $LOGGER.fatal($S, ...)
+          - pattern: $LOGGER.critical($S, ...)
+      - metavariable-regex:
+          metavariable: $S
+          regex: "(?i).*(password|secret|token|api_?key|authorization).*"
+
+  # no-semgrep: "scrubbing en Sentry/monitoreo de errores" es configuración del SDK de
+  # monitoreo; lo cubre la revisión con IA (spec de C7) y la verificación de patrones en logs.

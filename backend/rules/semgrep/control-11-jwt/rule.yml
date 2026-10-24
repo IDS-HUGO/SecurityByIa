@@ -1,0 +1,87 @@
+rules:
+  # Control 11: Tokens JWT de duración corta, máximo 15-30 minutos (inventario v1.0)
+  - id: py-jwt-long-exp-ctl11
+    languages: [python]
+    message: "Control 11 (ALTO): JWT con expiración de horas o días; el inventario exige access tokens de 15-30 minutos con rotación de refresh tokens."
+    severity: ERROR
+    metadata:
+      control: "11"
+      inventory: "inventario-controles-v1.0"
+      owasp: "A07:2021 - Identification and Authentication Failures (CWE-613)"
+      cwe: ["CWE-613"]
+      criticidad: "ALTO"
+    pattern-either:
+      - pattern: jwt.encode(..., datetime.timedelta(days=$D), ...)
+      - pattern: jwt.encode(..., timedelta(days=$D), ...)
+      - pattern: jwt.encode(..., datetime.timedelta(weeks=$W), ...)
+      - pattern: jwt.encode(..., timedelta(weeks=$W), ...)
+      - pattern: jwt.encode(..., datetime.timedelta(hours=$H), ...)
+      - pattern: jwt.encode(..., timedelta(hours=$H), ...)
+      - pattern: 'jwt.encode(..., expires_delta=datetime.timedelta(days=$D), ...)'
+      - pattern: 'jwt.encode(..., expires_delta=timedelta(days=$D), ...)'
+      - pattern: 'jwt.encode(..., expires_delta=datetime.timedelta(weeks=$W), ...)'
+      - pattern: 'jwt.encode(..., expires_delta=timedelta(weeks=$W), ...)'
+      - pattern: 'jwt.encode(..., expires_delta=datetime.timedelta(hours=$H), ...)'
+      - pattern: 'jwt.encode(..., expires_delta=timedelta(hours=$H), ...)'
+      # nota: hours=1 también excede el máximo de 15-30 min del inventario; el valor
+      # exacto (15 vs 30 min) lo confirma la revisión con IA (spec del control 11).
+
+  - id: py-jwt-unverified-decode-ctl11
+    languages: [python]
+    message: "Control 11 (ALTO): el token se decodifica sin validar firma (verify_signature=False o alg=none); validá firma, exp, aud e iss."
+    severity: ERROR
+    metadata:
+      control: "11"
+      inventory: "inventario-controles-v1.0"
+      owasp: "A07:2021 - Identification and Authentication Failures (CWE-613)"
+      cwe: ["CWE-347"]
+      criticidad: "ALTO"
+    pattern-either:
+      - pattern: 'jwt.decode($TOK, $KEY, ..., algorithms=["none"], ...)'
+      - pattern: 'jwt.decode($TOK, $KEY, ..., options={"verify_signature": False, ...}, ...)'
+      - pattern: 'jwt.decode($TOK, ..., options={"verify_signature": False, ...}, ...)'
+
+  - id: py-jwt-decode-without-aud-iss-ctl11
+    languages: [python]
+    message: "Control 11 (ALTO): jwt.decode sin validación de audience/issuer; validá aud e iss además de firma y exp."
+    severity: WARNING
+    metadata:
+      control: "11"
+      inventory: "inventario-controles-v1.0"
+      owasp: "A07:2021 - Identification and Authentication Failures (CWE-613)"
+      cwe: ["CWE-287"]
+      criticidad: "ALTO"
+    patterns:
+      - pattern: jwt.decode($TOK, $KEY, ...)
+      - pattern-not: jwt.decode(..., audience=$AUD, ...)
+      - pattern-not: jwt.decode(..., issuer=$ISS, ...)
+      - pattern-not: 'jwt.decode(..., options={"verify_signature": False, ...}, ...)'
+      - pattern-not: 'jwt.decode(..., algorithms=["none"], ...)'
+
+  - id: js-jwt-long-exp-ctl11
+    languages: [javascript]
+    message: "Control 11 (ALTO): JWT firmado con expiración de días o semanas; el inventario exige 15-30 minutos."
+    severity: ERROR
+    metadata:
+      control: "11"
+      inventory: "inventario-controles-v1.0"
+      owasp: "A07:2021 - Identification and Authentication Failures (CWE-613)"
+      cwe: ["CWE-613"]
+      criticidad: "ALTO"
+    patterns:
+      - pattern: 'jwt.sign($PAYLOAD, $KEY, { ..., expiresIn: $EXP, ... })'
+      - metavariable-regex:
+          metavariable: $EXP
+          regex: "['\"][0-9]+[dw]['\"]"
+
+  - id: js-jwt-unverified-decode-ctl11
+    languages: [javascript]
+    message: "Control 11 (ALTO): jwt.decode sin verificación de firma; usá jwt.verify con key, audience e issuer."
+    severity: ERROR
+    metadata:
+      control: "11"
+      inventory: "inventario-controles-v1.0"
+      owasp: "A07:2021 - Identification and Authentication Failures (CWE-613)"
+      cwe: ["CWE-347"]
+      criticidad: "ALTO"
+    pattern: jwt.decode($TOK, ...)

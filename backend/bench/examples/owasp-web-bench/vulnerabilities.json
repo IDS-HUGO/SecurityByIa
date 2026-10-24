@@ -1,0 +1,32 @@
+{
+  "vulnerabilities": [
+    {
+      "name": "Cross-site Scripting",
+      "vuln_code_snippet": "app.py",
+      "vuln_line": 10,
+      "cwe": "CWE-79",
+      "category": "Injection"
+    },
+    {
+      "name": "Path Traversal",
+      "vuln_code_snippet": "app.py",
+      "vuln_line": 17,
+      "cwe": "CWE-22",
+      "category": "Broken Access Control"
+    },
+    {
+      "name": "Insecure Deserialization",
+      "vuln_code_snippet": "app.py",
+      "vuln_line": 24,
+      "cwe": "CWE-502",
+      "category": "Integrity Failures"
+    },
+    {
+      "name": "Hardcoded Secret",
+      "vuln_code_snippet": "app.py",
+      "vuln_line": 28,
+      "cwe": "CWE-798",
+      "category": "Credentials"
+    }
+  ]
+}

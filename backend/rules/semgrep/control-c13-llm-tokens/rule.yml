@@ -1,0 +1,58 @@
+rules:
+  # C13: Consumo sin límites de IA (inventario v1.0)
+  - id: py-openai-no-max-tokens-ctl13
+    languages: [python]
+    message: "C13: llamada a modelo sin max_tokens/max_completion_tokens; definí límite de tokens por request, presupuesto por usuario y alertas de costo."
+    severity: WARNING
+    metadata:
+      control: "C13"
+      inventory: "inventario-controles-v1.0"
+      owasp: "LLM10:2025 - Unbounded Consumption"
+      cwe: ["CWE-770"]
+      criticidad: "COMPLEMENTARIO"
+    patterns:
+      - pattern-either:
+          - pattern: $CLIENT.chat.completions.create(...)
+          - pattern: $CLIENT.completions.create(...)
+          - pattern: openai.ChatCompletion.create(...)
+      - pattern-not: $CLIENT.chat.completions.create(..., max_tokens=$N, ...)
+      - pattern-not: $CLIENT.chat.completions.create(..., max_completion_tokens=$N, ...)
+      - pattern-not: $CLIENT.completions.create(..., max_tokens=$N, ...)
+      - pattern-not: openai.ChatCompletion.create(..., max_tokens=$N, ...)
+
+  - id: py-gemini-no-token-limit-ctl13
+    languages: [python]
+    message: "C13: generate_content sin generation_config con max_output_tokens; definí límite de tokens por request y presupuesto."
+    severity: WARNING
+    metadata:
+      control: "C13"
+      inventory: "inventario-controles-v1.0"
+      owasp: "LLM10:2025 - Unbounded Consumption"
+      cwe: ["CWE-770"]
+      criticidad: "COMPLEMENTARIO"
+    patterns:
+      - pattern: $MODEL.generate_content($PROMPT, ...)
+      - pattern-not: $MODEL.generate_content(..., generation_config=$CFG, ...)
+
+  - id: js-openai-no-max-tokens-ctl13
+    languages: [javascript]
+    message: "C13: llamada a modelo sin max_tokens en el request; definí límites por request/usuario y alertas de facturación."
+    severity: WARNING
+    metadata:
+      control: "C13"
+      inventory: "inventario-controles-v1.0"
+      owasp: "LLM10:2025 - Unbounded Consumption"
+      cwe: ["CWE-770"]
+      criticidad: "COMPLEMENTARIO"
+    patterns:
+      - pattern-either:
+          - pattern: $CLIENT.chat.completions.create({...})
+          - pattern: $CLIENT.completions.create({...})
+      - pattern-not: '$CLIENT.chat.completions.create({..., max_tokens: $N, ...})'
+      - pattern-not: '$CLIENT.chat.completions.create({..., max_completion_tokens: $N, ...})'
+      - pattern-not: '$CLIENT.completions.create({..., max_tokens: $N, ...})'
+
+  # no-semgrep (Anthropic Python): max_tokens es un parámetro OBLIGATORIO del SDK
+  # (client.messages.create(..., max_tokens=...)); su ausencia no compila, así que la
+  # señal "sin límite" no existe en Python. La cobertura del control la da la revisión
+  # con IA (presupuestos y alertas de costo por usuario, spec de C13).

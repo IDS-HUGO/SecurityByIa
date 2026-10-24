@@ -1,0 +1,34 @@
+id: "12"
+nombre: Mecanismos de acceso basados en roles (RBAC)
+categoria_owasp: A01
+criticidad_referencia: ALTO
+familia: Acceso y autenticación
+metodo: repo
+donde_buscar:
+- '**/permissions*.py'
+- '**/auth*.py'
+- '**/routes/**'
+- '**/routers/**'
+senales_incumplimiento:
+- Verificaciones ad-hoc dispersas
+- endpoints sin decorador/dependencia de autorización
+- roles aplicados solo en frontend
+falsos_positivos:
+- Endpoints públicos o de salud sin autorización por diseño, no sensibles.
+- Verificación ad-hoc aislada que igualmente valida pertenencia del recurso en el backend.
+herramientas:
+- revision-manual
+ia_revisa: Que los permisos sigan un modelo RBAC consistente aplicado en el backend, juzgando verificaciones ad-hoc dispersas,
+  endpoints sin decorador o dependencia de autorización, y roles aplicados solo en frontend.
+remediacion:
+- Matriz de roles y permisos.
+- Decoradores/dependencias de autorización consistentes.
+- Migrar verificaciones ad-hoc a RBAC.
+verificacion: Endpoints usan @require_role/@require_permission; usuario con menor rol recibe 403 en endpoints restringidos.
+criterio_aceptacion: Endpoints usan @require_role/@require_permission; usuario con menor rol recibe 403 en endpoints restringidos.
+fragmentos_regex:
+- '(?i)require[_ -](role|permission)'
+- '(?i)\brbac\b'
+- '(?i)\broles?\b'
+- '(?i)authoriz|autoriz'
+aplica_con_llm: false

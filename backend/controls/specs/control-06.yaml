@@ -1,0 +1,45 @@
+id: "6"
+nombre: Proceso de gestión de parches y dependencias vulnerables
+categoria_owasp: A06
+criticidad_referencia: CRITICO
+familia: Dependencias
+metodo: repo
+donde_buscar:
+- '**/package.json'
+- '**/pyproject.toml'
+- '**/poetry.lock'
+- '**/requirements.txt'
+- '**/Dockerfile*'
+- '**/.github/dependabot.yml'
+- '**/renovate.json'
+senales_incumplimiento:
+- Sin Dependabot/Renovate o parcial
+- vulnerabilidades transitivas sin seguimiento
+- componentes secundarios fuera de proceso
+- SLA no definido
+falsos_positivos:
+- Dependabot/Renovate configurado a nivel de organización, cubriendo el repo aunque no exista config individual.
+- Vulnerabilidad transitiva ya mitigada mediante override o fix version definido en el manifiesto.
+herramientas:
+- dependabot
+- renovate
+- npm-audit
+- pip-audit
+- snyk
+- trivy
+ia_revisa: Que exista un proceso formal para detectar y actualizar dependencias directas y transitivas con vulnerabilidades
+  conocidas en todos los componentes, juzgando cobertura de Dependabot/Renovate (ausente o parcial), transitivas sin seguimiento,
+  componentes secundarios fuera de proceso y SLA no definido.
+remediacion:
+- Configurar Dependabot/Renovate con PRs automáticos para todos los manifiestos (incluyendo github-actions y Docker).
+- Pipeline de actualización semanal.
+- 'SLA por severidad: Crítico <= 48h, Alto <= 30 días, Medio <= 90 días.'
+- Fallar CI ante vulnerabilidades críticas; overrides para transitivas.
+verificacion: Dependabot/Renovate activo en todos los manifiestos; hallazgos High remediados en < 30 días.
+criterio_aceptacion: Dependabot/Renovate activo en todos los manifiestos; hallazgos High remediados en < 30 días.
+fragmentos_regex:
+- '(?i)dependabot'
+- '(?i)renovate'
+- '(?i)transitiv'
+- '(?i)\bsla\b'
+aplica_con_llm: false

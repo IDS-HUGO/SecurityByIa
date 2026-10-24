@@ -1,0 +1,33 @@
+id: "C6"
+nombre: Respaldos y recuperación
+categoria_owasp: 'Ref: A05'
+criticidad_referencia: COMPLEMENTARIO
+familia: Infraestructura y nube
+metodo: nube
+donde_buscar:
+- '**/*.tf'
+senales_incumplimiento:
+- Respaldos automáticos ausentes o sin cifrar
+- Retención de respaldos no definida
+- deletion_protection deshabilitada
+- Sin prueba periódica de restauración
+falsos_positivos:
+- Backup retention y deletion_protection ya configurados (control cumplido).
+- Respaldos gestionados fuera del IaC con política documentada y prueba de restauración vigente.
+herramientas:
+- aws-cli
+- revision-manual
+ia_revisa: Que existan respaldos automáticos cifrados con retención definida, deletion_protection activa y prueba periódica
+  de restauración.
+remediacion:
+- Habilitar respaldos automáticos cifrados con retención definida.
+- Activar deletion_protection.
+- Ejecutar y documentar pruebas periódicas de restauración.
+verificacion: aws rds describe-db-clusters (BackupRetentionPeriod, DeletionProtection) y acta de prueba de restauración.
+criterio_aceptacion: aws rds describe-db-clusters muestra BackupRetentionPeriod y DeletionProtection configurados y existe
+  acta de prueba de restauración.
+fragmentos_regex:
+- 'backup_retention'
+- 'deletion_protection'
+- '(?i)restor|restaur'
+aplica_con_llm: false

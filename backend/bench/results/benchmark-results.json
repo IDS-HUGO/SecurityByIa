@@ -1,0 +1,148 @@
+{
+  "run_id": "bench_20261024_161601_51c03d",
+  "timestamp": "2026-10-24T16:16:01.806898+00:00",
+  "date_formatted": "24 Oct 2026, 16:16:01 UTC",
+  "feature": "p0-3-juiceshop-smoke",
+  "is_baseline": false,
+  "duration_seconds": 70.89,
+  "metadata": {
+    "semgrep_version": "1.182.1",
+    "rules": {
+      "local_rules_file": "rules/security-rules.yml",
+      "local_rules_loaded": true,
+      "local_rule_ids": [
+        {
+          "id": "py-command-injection",
+          "cwe": "CWE-78"
+        },
+        {
+          "id": "py-sql-injection-concat",
+          "cwe": "CWE-89"
+        },
+        {
+          "id": "py-code-injection-eval",
+          "cwe": "CWE-94"
+        },
+        {
+          "id": "py-broken-crypto-md5",
+          "cwe": "CWE-327"
+        },
+        {
+          "id": "py-hardcoded-secret",
+          "cwe": "CWE-798"
+        },
+        {
+          "id": "py-path-traversal",
+          "cwe": "CWE-22"
+        },
+        {
+          "id": "py-insecure-deserialization",
+          "cwe": "CWE-502"
+        },
+        {
+          "id": "py-reflected-xss",
+          "cwe": "CWE-79"
+        }
+      ],
+      "registry_configs": [
+        "p/owasp-top-ten"
+      ]
+    },
+    "tool_commit": "a7e1e923732d05d4de906b42799fc3de99ed85bf"
+  },
+  "summary": {
+    "total_repos": 1,
+    "total_ground_truth": 0,
+    "total_detected": 0,
+    "true_positives": 0,
+    "false_positives": 0,
+    "false_negatives": 0,
+    "avg_recall": 0.0,
+    "avg_tpr": 0.0,
+    "avg_fpr": 0.0,
+    "avg_precision": 0.0,
+    "avg_f1_score": 0.0
+  },
+  "comparison": {
+    "has_previous": true,
+    "delta_recall_pts": 0.0,
+    "delta_tpr_pts": 0.0,
+    "delta_fpr_pts": 0.0,
+    "delta_precision_pts": 0.0,
+    "delta_f1_pts": 0.0,
+    "previous_run_id": "bench_20261024_161150_afc2e5",
+    "previous_timestamp": "2026-10-24T16:11:50.951855+00:00",
+    "previous_feature": "p0-3-juiceshop-smoke"
+  },
+  "baseline_comparison": {
+    "has_previous": true,
+    "delta_recall_pts": -10.4,
+    "delta_tpr_pts": -10.4,
+    "delta_fpr_pts": -92.1,
+    "delta_precision_pts": -7.9,
+    "delta_f1_pts": -9.0,
+    "baseline_timestamp": "2026-10-24T16:04:02.747199+00:00",
+    "baseline_feature": "p0-3-real-benchmark"
+  },
+  "repositories": [
+    {
+      "id": "repo-juice-shop-real",
+      "name": "OWASP Juice Shop",
+      "type": "owasp",
+      "format": "fpr-smoke",
+      "description": "OWASP Juice Shop real (Node/TS) como corrida de humo: volumen y ruido de hallazgos sobre una app intencionalmente vulnerable",
+      "commit": "717f5efa886b0417eeecb52378b03cf10567b7e2",
+      "metrics": {
+        "smoke": true,
+        "total_detected": 0,
+        "error": "Semgrep falló también con las reglas locales (exit code 0): el análisis se aborta para no reportar un repositorio limpio sin haber escaneado.",
+        "note": "Corrida de humo de FPR: el repositorio no publica ground truth por código; no se calculan TPR/FPR."
+      },
+      "comparison": {},
+      "findings_detected": 0,
+      "ground_truth_count": 0,
+      "sample_findings": []
+    }
+  ],
+  "cwe_categories": [],
+  "tool_evaluations": [],
+  "scanner_pairs": [],
+  "triage_benchmark": {
+    "raw_fpr_before": 0.0,
+    "models_evaluated": [
+      {
+        "model_name": "Gemini (gemini-3.5-flash-lite)",
+        "provider": "gemini",
+        "fpr_before": 0.0,
+        "fpr_after": 0.0,
+        "delta_fpr_pts": 0.0,
+        "false_positives_eliminated": 0,
+        "true_positives_retained": 0,
+        "uncertain_sent_to_human_review": 0,
+        "standardized_prompt": "TRIAGE_SYSTEM_PROMPT v1.0"
+      },
+      {
+        "model_name": "OpenAI (gpt-4o-mini)",
+        "provider": "openai",
+        "fpr_before": 0.0,
+        "fpr_after": 0.0,
+        "delta_fpr_pts": 0.0,
+        "false_positives_eliminated": 0,
+        "true_positives_retained": 0,
+        "uncertain_sent_to_human_review": 0,
+        "standardized_prompt": "TRIAGE_SYSTEM_PROMPT v1.0"
+      },
+      {
+        "model_name": "Claude (claude-3-5-sonnet)",
+        "provider": "claude",
+        "fpr_before": 0.0,
+        "fpr_after": 0.0,
+        "delta_fpr_pts": 0.0,
+        "false_positives_eliminated": 0,
+        "true_positives_retained": 0,
+        "uncertain_sent_to_human_review": 0,
+        "standardized_prompt": "TRIAGE_SYSTEM_PROMPT v1.0"
+      }
+    ]
+  }
+}

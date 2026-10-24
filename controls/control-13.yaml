@@ -1,0 +1,31 @@
+id: "13"
+nombre: Cifrado en reposo de la base de datos
+categoria_owasp: A02
+criticidad_referencia: ALTO
+familia: Secretos y criptografía
+metodo: nube
+donde_buscar:
+- '**/*.tf'
+senales_incumplimiento:
+- storage_encrypted ausente o en false
+- sin kms_key_id (clave administrada por defecto en lugar de CMK dedicada)
+falsos_positivos:
+- storage_encrypted = true con kms_key_id de CMK dedicada configurado (control cumplido).
+- Recurso de cómputo o colas sin cifrado de almacenamiento en el mismo módulo (el control aplica a la base de datos y sus
+  snapshots).
+herramientas:
+- checkov
+- aws-cli
+ia_revisa: Que la base de datos, sus snapshots y respaldos estén cifrados en reposo, juzgando si storage_encrypted está ausente
+  o en false y si falta kms_key_id con CMK dedicada.
+remediacion:
+- Habilitar storage_encrypted = true.
+- Configurar kms_key_id con CMK dedicada.
+- Para clúster existente: snapshot, copia cifrada y restauración.
+verificacion: aws rds describe-db-clusters --query 'DBClusters[].StorageEncrypted' devuelve true.
+criterio_aceptacion: aws rds describe-db-clusters --query 'DBClusters[].StorageEncrypted' devuelve true.
+fragmentos_regex:
+- 'storage_encrypted'
+- 'kms_key_id'
+- 'aws_rds_cluster|aws_db_instance'
+aplica_con_llm: false

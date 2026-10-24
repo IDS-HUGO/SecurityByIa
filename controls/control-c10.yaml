@@ -1,0 +1,32 @@
+id: "C10"
+nombre: Inyección de prompts
+categoria_owasp: 'Ref: LLM01:2025'
+criticidad_referencia: COMPLEMENTARIO
+familia: IA (solo con LLM)
+metodo: repo
+donde_buscar:
+- '**/*.py'
+- '**/*.js'
+- '**/*.ts'
+senales_incumplimiento:
+- Instrucciones del sistema mezcladas con los datos del usuario en el prompt
+- Modelo con herramientas de privilegios excesivos
+falsos_positivos:
+- Instrucciones del sistema y datos del usuario ya separados con delimitadores claros (control cumplido).
+- Herramientas expuestas al modelo con permisos mínimos necesarios.
+herramientas:
+- revision-manual
+ia_revisa: Que las instrucciones del sistema estén separadas de los datos del usuario y que el modelo no reciba herramientas
+  con privilegios excesivos.
+remediacion:
+- Separar instrucciones del sistema de los datos del usuario.
+- Limitar las herramientas del modelo al mínimo privilegio.
+verificacion: Pruebas con prompts adversariales y documentos con instrucciones ocultas.
+criterio_aceptacion: Las pruebas con prompts adversariales y documentos con instrucciones ocultas no logran alterar el comportamiento
+  del sistema.
+fragmentos_regex:
+- '(?i)system[_ -]?prompt'
+- '(?i)\bprompt\b'
+- '(?i)(tool|function)[_ -]?call'
+aplica_con_llm: true
+justificacion_no_aplica: El repositorio no usa un SDK de modelos de lenguaje (sin dependencias de LLM detectadas en manifiestos).

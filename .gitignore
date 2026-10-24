@@ -1,3 +1,46 @@
-/venv
+# --- Python ---
+/venv/
+.venv/
 __pycache__/
-storage/analyses/*.json
+*.py[cod]
+.pytest_cache/
+
+# --- Secretos y claves: nunca commitear ---
+.claves/
+.env
+.env.*
+!.env.example
+backend/proxy/tokens.json
+
+# --- Estado en runtime (el código recrea estos archivos al arrancar) ---
+storage/
+backend/storage/
+reporte_seguridad.json
+reporte_seguridad.md
+
+# --- Benchmark: clones temporales y resultados de corridas ---
+/tmp/bench-repos/
+/tmp/bench-repos-test/
+/tmp/bench-repos-run/
+bench/cloned/
+bench/downloads/
+bench/results/*
+!bench/results/baseline.json
+!bench/results/benchmark-results.json
+backend/bench/cloned/
+backend/bench/downloads/
+backend/bench/results/*
+!backend/bench/results/baseline.json
+!backend/bench/results/benchmark-results.json
+
+# --- Node / Frontend tooling ---
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+
+# --- Sistema / editores ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

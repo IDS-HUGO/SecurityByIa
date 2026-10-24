@@ -1,0 +1,30 @@
+id: "C4"
+nombre: SSRF
+categoria_owasp: 'Ref: A10'
+criticidad_referencia: COMPLEMENTARIO
+familia: Validación e inyección
+metodo: repo
+donde_buscar:
+- '**/*.py'
+- '**/*.js'
+- '**/*.ts'
+senales_incumplimiento:
+- Llamadas del servidor a URLs provistas por el usuario (webhooks, scraping) sin allowlist
+- Sin bloqueo de IPs privadas ni del metadata service (IMDSv2)
+falsos_positivos:
+- Llamadas restringidas a un allowlist fijo de dominios confiables con bloqueo de IPs privadas (control cumplido).
+- Llamadas a URLs de configuración interna que no provienen de input del usuario.
+herramientas:
+- revision-manual
+ia_revisa: Que las llamadas del servidor a URLs del usuario (webhooks, scraping) usen allowlist y bloqueen IPs privadas y
+  el metadata service (IMDSv2).
+remediacion:
+- Aplicar allowlist de destinos y bloquear IPs privadas y el metadata service (IMDSv2).
+verificacion: Probar URLs hacia 169.254.169.254 e IPs internas (deben bloquearse).
+criterio_aceptacion: Las URLs hacia 169.254.169.254 e IPs internas son bloqueadas.
+fragmentos_regex:
+- '(?i)webhook'
+- '169\.254\.169\.254'
+- '(?i)allow[_ -]?list|whitelist'
+- '(?i)imds'
+aplica_con_llm: false

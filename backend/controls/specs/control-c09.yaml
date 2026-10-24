@@ -1,0 +1,35 @@
+id: "C9"
+nombre: Auditoría de la cuenta cloud
+categoria_owasp: 'Ref: A09'
+criticidad_referencia: COMPLEMENTARIO
+familia: Infraestructura y nube
+metodo: nube
+donde_buscar:
+- '**/*.tf'
+senales_incumplimiento:
+- CloudTrail sin cobertura multirregión
+- GuardDuty o AWS Config deshabilitados
+- MFA ausente en root/usuarios
+- Access keys de larga duración presentes
+falsos_positivos:
+- Federación/SSO con roles temporales en lugar de access keys de larga duración.
+- CloudTrail organizacional gestionado en otra cuenta, ya cubriendo multirregión.
+herramientas:
+- aws-cli
+- revision-manual
+ia_revisa: Que la cuenta cloud esté auditada, juzgando la cobertura multirregión de CloudTrail, la activación de GuardDuty
+  y AWS Config, la presencia de MFA en root/usuarios y la ausencia de access keys de larga duración.
+remediacion:
+- Habilitar CloudTrail multirregión, GuardDuty y AWS Config.
+- Exigir MFA en root y usuarios.
+- Eliminar access keys de larga duración.
+verificacion: aws cloudtrail describe-trails; reporte de credenciales IAM.
+criterio_aceptacion: aws cloudtrail describe-trails muestra CloudTrail multirregión y el reporte de credenciales IAM no muestra
+  access keys de larga duración.
+fragmentos_regex:
+- '(?i)cloudtrail'
+- '(?i)guardduty'
+- '(?i)aws_config'
+- '(?i)access[_ -]?key'
+- '(?i)\bmfa\b'
+aplica_con_llm: false

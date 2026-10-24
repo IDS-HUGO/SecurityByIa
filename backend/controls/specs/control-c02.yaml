@@ -1,0 +1,30 @@
+id: "C2"
+nombre: Autorización a nivel de objeto (IDOR / BOLA)
+categoria_owasp: 'Ref: API1:2023'
+criticidad_referencia: COMPLEMENTARIO
+familia: Acceso y autenticación
+metodo: repo
+donde_buscar:
+- '**/routes/**'
+- '**/routers/**'
+- '**/*.py'
+senales_incumplimiento:
+- Endpoints que no validan que el recurso pertenece al usuario/org que lo solicita
+falsos_positivos:
+- Recursos compartidos intencionalmente entre usuarios de la misma organización, con pertenencia validada a nivel org.
+- Endpoints de listado donde el filtrado por usuario/org se aplica en la consulta base.
+herramientas:
+- revision-manual
+- curl
+ia_revisa: Que cada endpoint valide que el recurso solicitado pertenece al usuario u organización que lo pide, juzgando accesos
+  a objetos por ID sin verificación de pertenencia.
+remediacion:
+- Validar pertenencia del recurso al usuario/org en cada endpoint.
+- Aplicar el chequeo de pertenencia de forma consistente en todos los endpoints.
+verificacion: Repetir requests cambiando IDs con un segundo usuario (debe retornar 403 o 404).
+criterio_aceptacion: Repetir requests cambiando IDs con un segundo usuario retorna 403 o 404.
+fragmentos_regex:
+- '(?i)(user|org)[_-]?id'
+- '(?i)belongs_to|pertenec'
+- '(403|404)'
+aplica_con_llm: false

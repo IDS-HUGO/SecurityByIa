@@ -1,0 +1,33 @@
+id: "4"
+nombre: Alertas a administradores ante fallos repetidos de control de acceso
+categoria_owasp: A09
+criticidad_referencia: CRITICO
+familia: Errores y registro
+metodo: nube
+donde_buscar:
+- '**/*.tf'
+- '**/*.yaml'
+- '**/*.yml'
+senales_incumplimiento:
+- Fallos registrados sin destinatario de aviso, sin umbral definido, o sin procedimiento de respuesta.
+falsos_positivos:
+- Alarmas ya configuradas con umbral y destinatario definidos (control cumplido).
+- Fallos aislados por debajo del umbral definido que no disparan alerta por diseño.
+herramientas:
+- revision-manual
+- aws-cli
+ia_revisa: Que existan alertas ante intentos repetidos de acceso no autorizado (401/403, fallos de login), juzgando si los
+  fallos registrados carecen de destinatario de aviso, de umbral definido o de procedimiento de respuesta.
+remediacion:
+- Crear métricas de fallos de autenticación/autorización.
+- Configurar alarmas con umbral (ej. >=5 fallos en 5 min por IP/usuario).
+- Integrar notificaciones a seguridad.
+- Documentar procedimiento de respuesta.
+verificacion: Generar 5 o más intentos fallidos en 5 minutos y confirmar disparo de alerta.
+criterio_aceptacion: La alerta se dispara al generar 5 o más intentos fallidos en 5 minutos.
+fragmentos_regex:
+- '(?i)metric[_ -]?filter'
+- '(?i)alarm'
+- '(401|403)'
+- '(?i)sns'
+aplica_con_llm: false

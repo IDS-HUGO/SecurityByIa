@@ -1,0 +1,31 @@
+id: "C11"
+nombre: Manejo de la salida del modelo
+categoria_owasp: 'Ref: LLM05:2025'
+criticidad_referencia: COMPLEMENTARIO
+familia: IA (solo con LLM)
+metodo: repo
+donde_buscar:
+- '**/*.py'
+- '**/*.js'
+- '**/*.ts'
+senales_incumplimiento:
+- Salida del LLM renderizada como HTML/Markdown sin escapar
+- Salida del modelo ejecutada directamente
+falsos_positivos:
+- Salida del modelo renderizada siempre como texto plano.
+- Salida sanitizada o validada antes de usarla.
+herramientas:
+- revision-manual
+ia_revisa: Que la salida del LLM se trate como no confiable, juzgando si se escapa antes de renderizar HTML/Markdown y si
+  nunca se ejecuta directamente.
+remediacion:
+- Escapar la salida del modelo antes de renderizar HTML/Markdown.
+- Nunca ejecutar la salida del modelo directamente.
+verificacion: Inducir al modelo a devolver HTML/JS y verificar que se renderiza como texto.
+criterio_aceptacion: Al inducir al modelo a devolver HTML/JS, la salida se renderiza como texto.
+fragmentos_regex:
+- '(?i)markdown'
+- '(?i)\bllm\b'
+- '(?i)escape|sanitiz'
+aplica_con_llm: true
+justificacion_no_aplica: El repositorio no usa un SDK de modelos de lenguaje (sin dependencias de LLM detectadas en manifiestos).

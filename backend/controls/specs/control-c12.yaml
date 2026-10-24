@@ -1,0 +1,31 @@
+id: "C12"
+nombre: Datos confidenciales y proveedores de IA
+categoria_owasp: 'Ref: LLM02:2025'
+criticidad_referencia: COMPLEMENTARIO
+familia: IA (solo con LLM)
+metodo: evidencia
+donde_buscar:
+- '**/*.md'
+- '**/docs/**'
+senales_incumplimiento:
+- Términos del proveedor que permiten entrenamiento o retención de datos
+- Datos confidenciales enviados al proveedor sin anonimizar
+falsos_positivos:
+- Proveedor con retención cero (Zero Data Retention) contratada.
+- Datos enviados al proveedor ya anonimizados o sin información confidencial.
+herramientas:
+- revision-manual
+ia_revisa: Que los términos del proveedor de IA excluyan entrenamiento y retención de datos y que los datos enviados estén
+  anonimizados.
+remediacion:
+- Exigir términos del proveedor sin entrenamiento/retención.
+- Anonimizar los datos enviados al proveedor.
+verificacion: Revisar DPA vigentes; confirmar retención cero (Zero Data Retention).
+criterio_aceptacion: Los DPA vigentes confirman retención cero (Zero Data Retention).
+fragmentos_regex:
+- '(?i)zero[_ -]?data[_ -]?retention|\bzdr\b'
+- '(?i)\bdpa\b'
+- '(?i)anonimi|anonymi'
+- '(?i)retention|retención'
+aplica_con_llm: true
+justificacion_no_aplica: El repositorio no usa un SDK de modelos de lenguaje (sin dependencias de LLM detectadas en manifiestos).

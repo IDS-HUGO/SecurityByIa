@@ -1,0 +1,52 @@
+rules:
+  # Control 1: CORS minimizado solo orígenes confiables (inventario v1.0)
+  - id: py-cors-wildcard-credentials-ctl1
+    languages: [python]
+    message: "Control 1 (CRÍTICO): CORS con allow_origins=['*'] y allow_credentials=True permite que cualquier origen lea respuestas autenticadas. Definí una lista explícita de orígenes confiables."
+    severity: ERROR
+    metadata:
+      control: "1"
+      inventory: "inventario-controles-v1.0"
+      owasp: "A01:2021 - Broken Access Control (también A05)"
+      cwe: ["CWE-942"]
+      criticidad: "CRITICO"
+    patterns:
+      - pattern-either:
+          - pattern: CORSMiddleware(..., allow_origins=["*"], ..., allow_credentials=True, ...)
+
+  - id: py-cors-wildcard-methods-headers-ctl1
+    languages: [python]
+    message: "Control 1 (CRÍTICO): allow_methods=['*'] y allow_headers=['*'] amplían la superficie CORS sin necesidad; restringilos a lo que la API usa."
+    severity: WARNING
+    metadata:
+      control: "1"
+      inventory: "inventario-controles-v1.0"
+      owasp: "A01:2021 - Broken Access Control (también A05)"
+      cwe: ["CWE-942"]
+      criticidad: "CRITICO"
+    patterns:
+      - pattern: CORSMiddleware(..., allow_methods=["*"], ..., allow_headers=["*"], ...)
+
+  - id: py-django-cors-all-origins-ctl1
+    languages: [python]
+    message: "Control 1 (CRÍTICO): CORS_ALLOW_ALL_ORIGINS = True acepta cualquier origen; reemplazalo por una lista explícita de orígenes confiables."
+    severity: ERROR
+    metadata:
+      control: "1"
+      inventory: "inventario-controles-v1.0"
+      owasp: "A01:2021 - Broken Access Control (también A05)"
+      cwe: ["CWE-942"]
+      criticidad: "CRITICO"
+    pattern: CORS_ALLOW_ALL_ORIGINS = True
+
+  - id: js-express-cors-credentials-ctl1
+    languages: [javascript]
+    message: "Control 1 (CRÍTICO): cors({origin: true, credentials: true}) refleja cualquier origen y permite credenciales; usá una lista explícita de orígenes."
+    severity: ERROR
+    metadata:
+      control: "1"
+      inventory: "inventario-controles-v1.0"
+      owasp: "A01:2021 - Broken Access Control (también A05)"
+      cwe: ["CWE-942"]
+      criticidad: "CRITICO"
+    pattern: 'cors({ origin: true, credentials: true })'

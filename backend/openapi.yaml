@@ -1,0 +1,1378 @@
+openapi: 3.0.3
+info:
+  title: Security Control Center API
+  description: >
+    API REST para la plataforma de seguridad de aplicaciones (SAST, detección de secretos,
+    análisis de dependencias e infraestructura) y motor de benchmark de precisión con métricas TPR/FPR.
+  version: 1.0.0
+servers:
+  - url: /
+    description: Servidor local / proxy
+
+paths:
+  /api/analyze:
+    post:
+      summary: Encolar análisis de repositorio GitHub
+      description: >
+        Inicia un análisis de seguridad asíncrono para un repositorio público de GitHub.
+        Aplica control de tasa por IP y encola el trabajo en un worker pool con límite de concurrencia.
+      operationId: startAnalysis
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - url
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  example: https://github.com/juice-shop/juice-shop
+                enable_ai_triage:
+                  type: boolean
+                  description: Habilita el agente de triage con IA para clasificar hallazgos con contexto acotado (opt-in)
+                  default: false
+      responses:
+        '202':
+          description: Análisis encolado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisQueuedResponse'
+        '400':
+          description: URL inválida o formato no permitido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Límite de tasa por IP excedido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/analysis/{analysis_id}:
+    get:
+      summary: Consultar estado o resultado de un análisis
+      description: Retorna el progreso, metadatos, hallazgos deduplicados y reporte de remediación.
+      operationId: getAnalysis
+      parameters:
+        - name: analysis_id
+          in: path
+          required: true
+          description: Identificador UUID del análisis
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Detalle del análisis
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisDetailResponse'
+        '404':
+          description: Análisis no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/analysis/{analysis_id}/report.md:
+    get:
+      summary: Reporte técnico en Markdown (F9)
+      description: >
+        Reporte enriquecido con SHA del commit, fecha, hallazgos por severidad,
+        estado de remediación (F6), explicación de cada hallazgo y guía de buenas
+        prácticas generada por el agente redactor determinista (solo datos reales,
+        con datos faltantes declarados).
+      operationId: getAnalysisReportMarkdown
+      parameters:
+        - name: analysis_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Reporte en Markdown
+          content:
+            text/markdown:
+              schema:
+                type: string
+        '404':
+          description: Análisis no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/analysis/{analysis_id}/report.sarif:
+    get:
+      summary: Exportación SARIF 2.1.0 (F9)
+      description: >
+        Exporta los hallazgos del análisis a SARIF 2.1.0: level mapeado desde la
+        severidad (critical/high=error, medium=warning, low=note), huella
+        parcial regla+archivo+línea y estado de remediación por resultado.
+      operationId: getAnalysisReportSarif
+      parameters:
+        - name: analysis_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Documento SARIF 2.1.0
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [version, runs]
+                properties:
+                  $schema:
+                    type: string
+                  version:
+                    type: string
+                    enum: [2.1.0]
+                  runs:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        tool:
+                          type: object
+                        invocations:
+                          type: array
+                          items:
+                            type: object
+                        properties:
+                          type: object
+                        results:
+                          type: array
+                          items:
+                            type: object
+        '404':
+          description: Análisis no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/analysis/{analysis_id}/executive-summary:
+    get:
+      summary: Resumen ejecutivo de una página (F9)
+      description: >
+        Datos para la vista imprimible del dashboard: repositorio con SHA y rama,
+        conteos por severidad, estado de remediación, hallazgos principales con
+        explicación del redactor, guía de buenas prácticas y datos faltantes.
+      operationId: getAnalysisExecutiveSummary
+      parameters:
+        - name: analysis_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Resumen ejecutivo
+          content:
+            application/json:
+              schema:
+                type: object
+        '404':
+          description: Análisis no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/analyses/compare:
+    get:
+      summary: Comparar dos análisis del mismo repositorio (F9)
+      description: >
+        Clasifica hallazgos como nuevos, corregidos y persistentes entre dos
+        análisis usando la huella regla+archivo+línea. Rechaza con 400 si
+        faltan parámetros o los análisis son de repositorios distintos.
+      operationId: compareAnalyses
+      parameters:
+        - name: base
+          in: query
+          required: true
+          description: analysis_id del análisis anterior (base)
+          schema:
+            type: string
+        - name: target
+          in: query
+          required: true
+          description: analysis_id del análisis actual (target)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Comparación de los dos análisis
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  repository:
+                    type: string
+                  base:
+                    type: object
+                  target:
+                    type: object
+                  new:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Finding'
+                  fixed:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Finding'
+                  persistent:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Finding'
+                  counts:
+                    type: object
+                    properties:
+                      new:
+                        type: integer
+                      fixed:
+                        type: integer
+                      persistent:
+                        type: integer
+                  note:
+                    type: string
+        '400':
+          description: Parámetros faltantes o repositorios distintos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Análisis no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/analyses:
+    get:
+      summary: Listar historial de análisis persistidos
+      description: Retorna los últimos 20 análisis completados o almacenados en disco.
+      operationId: listAnalyses
+      responses:
+        '200':
+          description: Lista de resúmenes de análisis
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AnalysisSummaryItem'
+
+  /api/bench:
+    get:
+      summary: Obtener estado del motor de benchmark
+      description: Retorna el estado de ejecución, la última corrida, la baseline y el historial de benchmarks.
+      operationId: getBenchmarkStatus
+      responses:
+        '200':
+          description: Estado del motor de benchmark
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BenchmarkStatusResponse'
+
+  /api/bench/run:
+    post:
+      summary: Disparar corrida de benchmark de precisión
+      description: >
+        Ejecuta la suite de benchmark sobre los repositorios de referencia (ground truth)
+        evaluando TPR, FPR, precisión, desglose por CWE y comparativas con corridas previas.
+      operationId: runBenchmark
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                feature:
+                  type: string
+                  description: Etiqueta opcional de la feature evaluada
+                  example: "F4B - Separar frontend y backend"
+                save_as_baseline:
+                  type: boolean
+                  description: Indica si la corrida debe fijarse como nueva baseline de referencia
+                  default: false
+      responses:
+        '202':
+          description: Corrida de benchmark iniciada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BenchmarkRunStartedResponse'
+        '400':
+          description: Cuerpo de solicitud inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Ya existe una corrida de benchmark en ejecución
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Límite de tasa por IP excedido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/bench/baseline:
+    get:
+      summary: Obtener reporte de la baseline de benchmark
+      description: Retorna el reporte de la corrida designada como baseline de comparación.
+      operationId: getBenchmarkBaseline
+      responses:
+        '200':
+          description: Reporte baseline actual
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BenchmarkRunResult'
+        '404':
+          description: No existe una baseline configurada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/bench/history:
+    get:
+      summary: Listar historial de corridas de benchmark
+      description: Retorna la lista histórica con métricas resumidas de cada corrida de benchmark.
+      operationId: getBenchmarkHistory
+      responses:
+        '200':
+          description: Historial de benchmarks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BenchmarkHistoryItem'
+
+  /api/bench/run/{run_id}:
+    get:
+      summary: Obtener detalle de una corrida de benchmark específica
+      description: Retorna todas las métricas, tarjetas por repositorio y tablas de una corrida por su ID.
+      operationId: getBenchmarkRun
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          description: Identificador de la corrida (e.g. bench-20261014-120000)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Detalle completo de la corrida de benchmark
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BenchmarkRunResult'
+        '404':
+          description: Corrida no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/analysis/{analysis_id}/finding/{finding_id}/triage:
+    post:
+      summary: Registrar decisión humana de triage sobre un hallazgo
+      description: >
+        Permite a un analista confirmar un hallazgo, marcarlo como falso positivo o incierto,
+        con motivo obligatorio. Los falsos positivos guardan una huella para no repetirse.
+      operationId: triageFinding
+      parameters:
+        - name: analysis_id
+          in: path
+          required: true
+          description: Identificador UUID del análisis
+          schema:
+            type: string
+        - name: finding_id
+          in: path
+          required: true
+          description: Identificador numérico del hallazgo
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - decision
+                - reason
+              properties:
+                decision:
+                  type: string
+                  enum: [verdadero, falso, incierto]
+                  description: Veredicto asignado por la persona
+                reason:
+                  type: string
+                  description: Justificación obligatoria de la decisión
+                  example: "Plantilla Jinja2 de texto plano que no se inserta como HTML."
+                author:
+                  type: string
+                  description: Nombre o identificador del analista
+                  default: "analista-seguridad"
+      responses:
+        '200':
+          description: Decisión de triage registrada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  analysis_id:
+                    type: string
+                  finding:
+                    type: object
+                  fingerprint:
+                    type: string
+                    nullable: true
+        '400':
+          description: Decisión o motivo inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Análisis o hallazgo no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Límite de tasa por IP excedido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/analysis/{analysis_id}/review-queue:
+    get:
+      summary: Obtener cola de revisión humana para hallazgos inciertos
+      description: Retorna los hallazgos marcados como inciertos o pendientes de revisión, ordenados por severidad.
+      operationId: getReviewQueue
+      parameters:
+        - name: analysis_id
+          in: path
+          required: true
+          description: Identificador UUID del análisis
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Cola de hallazgos para revisión humana
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  analysis_id:
+                    type: string
+                  total:
+                    type: integer
+                  queue:
+                    type: array
+                    items:
+                      type: object
+        '404':
+          description: Análisis no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/triage/fingerprints:
+    get:
+      summary: Consultar huellas persistidas de falsos positivos confirmados
+      description: Retorna el diccionario de huellas SHA256 de falsos positivos marcados por personas.
+      operationId: getTriageFingerprints
+      responses:
+        '200':
+          description: Diccionario de huellas de falsos positivos
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: object
+
+  /api/analysis/{analysis_id}/finding/{finding_id}/fix:
+    post:
+      summary: Proponer y verificar corrección asistida (F6)
+      description: Genera un diff unificado mínimo mediante plantillas seguras y re-verifica con Semgrep.
+      operationId: proposeAndVerifyFix
+      parameters:
+        - name: analysis_id
+          in: path
+          required: true
+          description: Identificador UUID del análisis
+          schema:
+            type: string
+        - name: finding_id
+          in: path
+          required: true
+          description: Identificador numérico del hallazgo
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Parche propuesto y verificado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  analysis_id:
+                    type: string
+                  finding:
+                    type: object
+                  remediation:
+                    type: object
+        '400':
+          description: Identificador de hallazgo inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Análisis o hallazgo no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: No hay patrón aplicable para el hallazgo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Límite de tasa por IP excedido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/analysis/{analysis_id}/finding/{finding_id}/remediation/review:
+    post:
+      summary: Registrar revisión humana de parche propuesto (F6)
+      description: Permite aprobar o rechazar un parche propuesto con justificación obligatoria.
+      operationId: reviewRemediation
+      parameters:
+        - name: analysis_id
+          in: path
+          required: true
+          description: Identificador UUID del análisis
+          schema:
+            type: string
+        - name: finding_id
+          in: path
+          required: true
+          description: Identificador numérico del hallazgo
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - decision
+                - reason
+              properties:
+                decision:
+                  type: string
+                  enum: [approved, rejected, aprobar, rechazar]
+                  description: Decisión de aprobación o rechazo
+                reason:
+                  type: string
+                  description: Justificación obligatoria del revisor
+                  example: "Parche validado sin efectos secundarios."
+                author:
+                  type: string
+                  description: Nombre o identificador del analista
+                  default: "analista-seguridad"
+      responses:
+        '200':
+          description: Revisión registrada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  analysis_id:
+                    type: string
+                  finding:
+                    type: object
+                  remediation:
+                    type: object
+        '400':
+          description: Decisión o motivo inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Análisis o hallazgo no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Límite de tasa por IP excedido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/analysis/{analysis_id}/tests/run:
+    post:
+      summary: Ejecutar pruebas del proyecto analizado en contenedor aislado sin red (F6)
+      description: Solo corre en repositorios propios y con opt-in explícito (--network none).
+      operationId: runProjectSandboxTests
+      parameters:
+        - name: analysis_id
+          in: path
+          required: true
+          description: Identificador UUID del análisis
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                opt_in:
+                  type: boolean
+                  default: false
+                is_own_repo:
+                  type: boolean
+                  default: false
+      responses:
+        '200':
+          description: Resultado de la ejecución de pruebas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  executed:
+                    type: boolean
+                  status:
+                    type: string
+                  message:
+                    type: string
+        '403':
+          description: Ejecución no permitida sin opt-in explícito en repo propio
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Límite de tasa por IP excedido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/proxy/audit:
+    get:
+      summary: Últimas entradas de auditoría del proxy de secretos
+      description: >
+        Devuelve fecha, servicio, ruta, resultado y token de cada llamada al proxy.
+        Nunca incluye valores secretos ni cuerpos de petición/respuesta.
+      operationId: getProxyAudit
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+      responses:
+        '200':
+          description: Lista de entradas de auditoría
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    timestamp:
+                      type: string
+                    token_id:
+                      type: string
+                      nullable: true
+                    service:
+                      type: string
+                      nullable: true
+                    route:
+                      type: string
+                    status_code:
+                      type: integer
+                    result:
+                      type: string
+                    duration_ms:
+                      type: integer
+
+  /api/proxy/status:
+    get:
+      summary: Indicador del estado del proxy de secretos
+      description: >
+        Informa si el proxy está configurado, si responde (healthz), si hay token
+        del proxy configurado y qué proveedores están en la lista blanca.
+      operationId: getProxyStatus
+      responses:
+        '200':
+          description: Estado del proxy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  configured:
+                    type: boolean
+                  reachable:
+                    type: boolean
+                    nullable: true
+                  token_configured:
+                    type: boolean
+                  providers:
+                    type: array
+                    items:
+                      type: string
+                  status:
+                    type: string
+                    enum: [ok, down, unconfigured]
+
+  /webhooks/github:
+    post:
+      summary: Recibir eventos de GitHub (pull_request) con validación HMAC-SHA256
+      description: >
+        Valida la firma X-Hub-Signature-256 (HMAC-SHA256, comparación en tiempo constante)
+        contra GITHUB_WEBHOOK_SECRET, salta SHAs ya analizados y encola el análisis del PR
+        restringido a los archivos modificados (git diff contra la rama base), publicando
+        comentario y check run si GITHUB_TOKEN está configurado.
+      operationId: githubWebhook
+      parameters:
+        - name: X-Hub-Signature-256
+          in: header
+          required: true
+          description: Firma sha256=... del cuerpo crudo con GITHUB_WEBHOOK_SECRET
+          schema:
+            type: string
+        - name: X-GitHub-Event
+          in: header
+          required: true
+          description: Tipo de evento (ping, pull_request u otros que se ignoran)
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                action:
+                  type: string
+                pull_request:
+                  type: object
+                repository:
+                  type: object
+      responses:
+        '200':
+          description: Ping respondido, evento ignorado o SHA ya analizado (no se repite)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  reason:
+                    type: string
+                  analysis_id:
+                    type: string
+                    nullable: true
+        '202':
+          description: Análisis del PR encolado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  analysis_id:
+                    type: string
+                  status:
+                    type: string
+                  stage:
+                    type: string
+                  pr:
+                    type: integer
+                  head_sha:
+                    type: string
+        '400':
+          description: Payload JSON inválido o incompleto
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Firma de webhook inválida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '413':
+          description: Payload de webhook demasiado grande
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Webhook no configurado (falta GITHUB_WEBHOOK_SECRET)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/controls:
+    get:
+      summary: Lista de controles de seguridad (F10)
+      description: Retorna las especificaciones completas de los 35 controles del Inventario v1.0.
+      operationId: listControls
+      responses:
+        '200':
+          description: Lista de controles cargada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                  controls:
+                    type: array
+                    items:
+                      type: object
+
+  /api/analysis/{analysis_id}/controls:
+    get:
+      summary: Revisión por control del análisis (F10)
+      description: Retorna la evaluación de los 35 controles de seguridad para un análisis determinado.
+      operationId: getAnalysisControls
+      parameters:
+        - name: analysis_id
+          in: path
+          required: true
+          description: Identificador UUID del análisis
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Revisión por control obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  analysis_id:
+                    type: string
+                  controls_review:
+                    type: object
+        '404':
+          description: Análisis no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/analysis/{analysis_id}/controls/review:
+    post:
+      summary: Re-evaluar controles de seguridad del análisis (F10)
+      description: Ejecuta la re-evaluación de los controles para el análisis especificado.
+      operationId: reReviewControls
+      parameters:
+        - name: analysis_id
+          in: path
+          required: true
+          description: Identificador UUID del análisis
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Re-evaluación ejecutada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  analysis_id:
+                    type: string
+                  controls_review:
+                    type: object
+        '404':
+          description: Análisis no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/verificaciones/en-vivo:
+    post:
+      summary: Ejecutar verificaciones en vivo (F11)
+      description: Ejecuta verificadores de seguridad en modo HTTP o Nube con autorización obligatoria.
+      operationId: runLiveVerification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - autorizacion_confirmada
+                - target
+              properties:
+                modo:
+                  type: string
+                  enum: [http, nube]
+                  default: http
+                target:
+                  type: string
+                autorizacion_confirmada:
+                  type: boolean
+                controles:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Verificación ejecutada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  modo:
+                    type: string
+                  target:
+                    type: string
+                  results:
+                    type: array
+                    items:
+                      type: object
+        '400':
+          description: Falta autorización o datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/verificaciones/bitacora:
+    get:
+      summary: Bitácora de verificaciones en vivo (F11)
+      description: Retorna el historial de auditoría de verificaciones en vivo ejecutadas.
+      operationId: getVerificationAudit
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Bitácora obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                  entries:
+                    type: array
+                    items:
+                      type: object
+
+  /api/analysis/{analysis_id}/controls/{control_id}/evidencia:
+    post:
+      summary: Registrar ficha de evidencia manual para un control (F11)
+      description: Guarda ficha de evidencia para controles no automatizables (4, C1, C6, C9, C12).
+      operationId: saveControlEvidence
+      parameters:
+        - name: analysis_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: control_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - quien_sube
+              properties:
+                que_subir:
+                  type: string
+                quien_sube:
+                  type: string
+                fecha:
+                  type: string
+                notas:
+                  type: string
+                estado:
+                  type: string
+                  default: cumple
+      responses:
+        '200':
+          description: Ficha de evidencia registrada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Análisis no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          example: "Error message"
+        status:
+          type: string
+        message:
+          type: string
+
+    AnalysisQueuedResponse:
+      type: object
+      required:
+        - analysis_id
+        - status
+        - stage
+        - progress
+        - message
+      properties:
+        analysis_id:
+          type: string
+          example: "e6f2129c-a11c-4b5b-8002-99a3c9e6bb02"
+        status:
+          type: string
+          example: "processing"
+        stage:
+          type: string
+          example: "queued"
+        progress:
+          type: integer
+          example: 0
+        message:
+          type: string
+          example: "Analysis queued"
+
+    AnalysisSummaryItem:
+      type: object
+      properties:
+        analysis_id:
+          type: string
+        status:
+          type: string
+        stage:
+          type: string
+        created_at:
+          type: string
+        repository:
+          type: object
+          properties:
+            url:
+              type: string
+            name:
+              type: string
+        summary:
+          type: object
+          properties:
+            total:
+              type: integer
+            critical:
+              type: integer
+            high:
+              type: integer
+            medium:
+              type: integer
+            low:
+              type: integer
+
+    AnalysisDetailResponse:
+      type: object
+      required:
+        - status
+        - stage
+        - progress
+        - message
+      properties:
+        analysis_id:
+          type: string
+        status:
+          type: string
+          example: "completed"
+        stage:
+          type: string
+          example: "completed"
+        progress:
+          type: integer
+          example: 100
+        message:
+          type: string
+        repository:
+          type: object
+          properties:
+            url:
+              type: string
+            name:
+              type: string
+            commit:
+              type: string
+            branch:
+              type: string
+        summary:
+          type: object
+          properties:
+            total:
+              type: integer
+            critical:
+              type: integer
+            high:
+              type: integer
+            medium:
+              type: integer
+            low:
+              type: integer
+        findings:
+          type: array
+          items:
+            $ref: '#/components/schemas/Finding'
+        markdown_report:
+          type: string
+        analysis:
+          type: object
+
+    Finding:
+      type: object
+      required:
+        - id
+        - rule
+        - severity
+        - file
+      properties:
+        id:
+          type: integer
+        rule:
+          type: string
+        severity:
+          type: string
+          enum: [critical, high, medium, low]
+        severity_reason:
+          type: string
+        remediation_deadline:
+          type: string
+        owasp:
+          type: string
+        cwe:
+          type: array
+          items:
+            type: string
+        file:
+          type: string
+        line:
+          type: integer
+          nullable: true
+        title:
+          type: string
+        problem:
+          type: string
+        solution:
+          type: string
+        tools:
+          type: array
+          items:
+            type: string
+        sources:
+          type: object
+        package:
+          type: object
+          properties:
+            name:
+              type: string
+            version:
+              type: string
+            fixed_version:
+              type: string
+        verification:
+          type: string
+
+    BenchmarkRunStartedResponse:
+      type: object
+      required:
+        - run_id
+        - status
+        - message
+      properties:
+        run_id:
+          type: string
+        status:
+          type: string
+          example: "running"
+        message:
+          type: string
+
+    BenchmarkStatusResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        is_running:
+          type: boolean
+        progress:
+          type: integer
+        stage:
+          type: string
+        message:
+          type: string
+        error:
+          type: string
+          nullable: true
+        current_run_id:
+          type: string
+          nullable: true
+        latest_run:
+          $ref: '#/components/schemas/BenchmarkRunResult'
+        baseline:
+          $ref: '#/components/schemas/BenchmarkRunResult'
+        reference_repos_count:
+          type: integer
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/BenchmarkHistoryItem'
+
+    BenchmarkHistoryItem:
+      type: object
+      properties:
+        run_id:
+          type: string
+        timestamp:
+          type: string
+        date_formatted:
+          type: string
+        feature:
+          type: string
+        is_baseline:
+          type: boolean
+        summary:
+          type: object
+
+    BenchmarkRunResult:
+      type: object
+      properties:
+        run_id:
+          type: string
+        timestamp:
+          type: string
+        date_formatted:
+          type: string
+        feature:
+          type: string
+        is_baseline:
+          type: boolean
+        duration_seconds:
+          type: number
+        metadata:
+          type: object
+        summary:
+          type: object
+        comparison:
+          type: object
+        baseline_comparison:
+          type: object
+        repositories:
+          type: array
+          items:
+            type: object
+        cwe_categories:
+          type: array
+          items:
+            type: object
+        tool_evaluations:
+          type: array
+          items:
+            type: object
+        scanner_pairs:
+          type: array
+          items:
+            type: object

@@ -1,0 +1,42 @@
+id: "1"
+nombre: 'CORS minimizado: solo orígenes confiables'
+categoria_owasp: A01 Control de Acceso Roto (también A05)
+criticidad_referencia: CRITICO
+familia: Acceso y autenticación
+metodo: repo
+donde_buscar:
+- '**/server.py'
+- '**/main.py'
+- '**/app.js'
+- '**/settings.py'
+- '**/*.tf'
+senales_incumplimiento:
+- 'allow_origins=["*"] junto con allow_credentials=True'
+- 'allow_methods=["*"] y allow_headers=["*"] sin necesidad'
+- 'Express: cors({ origin: true, credentials: true })'
+- 'Django: CORS_ALLOW_ALL_ORIGINS = True con CORS_ALLOW_CREDENTIALS = True'
+- orígenes validados con expresiones regulares sin anclar
+falsos_positivos:
+- Endpoints públicos diseñados para ser consumidos por cualquier origen sin credenciales (allow_credentials ausente o false).
+- CORS permisivo acotado a entorno de desarrollo o pruebas, no al entorno de producción.
+herramientas:
+- revision-manual
+- curl
+ia_revisa: Que la política CORS no permita que un origen arbitrario haga peticiones autenticadas a la API y lea la respuesta,
+  juzgando si conviven comodines (allow_origins, allow_methods, allow_headers) con credenciales habilitadas, si el origin
+  se refleja sin validarlo y si los orígenes se validan con expresiones regulares sin anclar.
+remediacion:
+- Definir lista explícita de orígenes confiables por entorno (variable de config).
+- Reemplazar comodín por la lista.
+- Restringir allow_methods y allow_headers.
+- Mantener allow_credentials=True solo con la lista explícita; nunca reflejar origin sin validarlo.
+verificacion: 'Simple request: curl -s -D - -H "Origin: https://malicious.com" https://api.example.com/<endpoint>; preflight
+  OPTIONS.'
+criterio_aceptacion: 'Access-Control-Allow-Origin ausente o distinto de malicious.com, y sin Access-Control-Allow-Credentials: true.'
+fragmentos_regex:
+- 'allow_origins\s*=\s*\[\s*["'']\*["'']'
+- 'allow_credentials\s*=\s*True'
+- 'CORS_ALLOW_ALL_ORIGINS'
+- 'cors\(\s*\{[^}]*origin:\s*true'
+- 'allow_methods\s*=\s*\[\s*["'']\*["'']'
+aplica_con_llm: false

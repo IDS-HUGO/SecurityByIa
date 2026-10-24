@@ -1,0 +1,29 @@
+id: "19"
+nombre: Política de ciclo de vida en buckets
+categoria_owasp: A05
+criticidad_referencia: MEDIO
+familia: Infraestructura y nube
+metodo: repo
+donde_buscar:
+- '**/*.tf'
+senales_incumplimiento:
+- Bucket sin lifecycle configuration
+- versiones antiguas y multipart incompletos sin expiración
+falsos_positivos:
+- Reglas de lifecycle definidas a nivel de cuenta/organización fuera del módulo IaC revisado.
+- Bucket efímero de build/pipeline, vaciado o eliminado al finalizar el proceso.
+herramientas:
+- checkov
+- aws-cli
+ia_revisa: Que los buckets tengan reglas de ciclo de vida para evitar acumular objetos obsoletos, juzgando la ausencia de
+  lifecycle configuration y la falta de expiración de versiones antiguas y multipart incompletos.
+remediacion:
+- Definir reglas de transición (IA/Glacier), expiración, limpieza de versiones no actuales y multipart incompletos.
+verificacion: aws s3api get-bucket-lifecycle-configuration devuelve configuración válida.
+criterio_aceptacion: aws s3api get-bucket-lifecycle-configuration devuelve configuración válida.
+fragmentos_regex:
+- '(?i)lifecycle'
+- 'aws_s3_bucket'
+- 'noncurrent_version'
+- 'abort_incomplete_multipart_upload'
+aplica_con_llm: false

@@ -1,0 +1,38 @@
+id: "21"
+nombre: Cumplimiento de licencias de dependencias de terceros
+categoria_owasp: Gobernanza / Cumplimiento legal
+criticidad_referencia: MEDIO
+familia: Dependencias
+metodo: evidencia
+donde_buscar:
+- '**/*.spdx.json'
+- '**/*.cdx.json'
+- '**/package.json'
+- '**/requirements.txt'
+- '**/Dockerfile*'
+senales_incumplimiento:
+- GPL o AGPL (AGPL afecta SaaS)
+- LGPL en binarios distribuidos
+- dependencias declaradas sin uso
+falsos_positivos:
+- Licencia GPL/AGPL de herramienta de desarrollo o build, no distribuida con el producto final.
+- Dependencia con licencia dual que ofrece un término compatible con el modelo de distribución.
+herramientas:
+- scancode
+- depcheck
+- deptry
+- revision-manual
+ia_revisa: Que las licencias de dependencias sean compatibles con el modelo de distribución (SaaS vs Distribución física/on-premise),
+  juzgando la presencia de GPL o AGPL (AGPL afecta SaaS), LGPL en binarios distribuidos y dependencias declaradas sin uso.
+remediacion:
+- Inventario de licencias en cada release.
+- Conservar avisos de atribución.
+- Retirar dependencias sin uso (depcheck, deptry).
+- Solo dependencias de prod en imágenes finales.
+verificacion: Inventario sin licencias copyleft incompatibles activas.
+criterio_aceptacion: Inventario sin licencias copyleft incompatibles activas.
+fragmentos_regex:
+- '(?i)\b(agpl|gpl|lgpl)\b'
+- '(?i)\blicen[cs]e'
+- '(?i)copyleft'
+aplica_con_llm: false

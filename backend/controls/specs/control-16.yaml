@@ -1,0 +1,37 @@
+id: "16"
+nombre: Security headers (HSTS, CSP, X-Frame-Options, etc.)
+categoria_owasp: A05
+criticidad_referencia: MEDIO
+familia: API y borde
+metodo: repo
+donde_buscar:
+- '**/*middleware*'
+- '**/*.conf'
+- '**/*.tf'
+senales_incumplimiento:
+- Falta CSP, HSTS, X-Content-Type-Options, X-Frame-Options o Referrer-Policy
+- CSP débil
+- ALB sin drop_invalid_header_fields = true
+falsos_positivos:
+- Headers ya añadidos por el proxy/CDN frente a la aplicación (no duplicados en el origen).
+- Endpoint de API JSON sin CSP pero con el resto de los headers presentes.
+herramientas:
+- curl
+- checkov
+ia_revisa: Que la app envíe los security headers y el balanceador descarte headers HTTP malformados, juzgando la ausencia
+  de CSP, HSTS, X-Content-Type-Options, X-Frame-Options o Referrer-Policy, CSP débil y ALB sin drop_invalid_header_fields
+  = true.
+remediacion:
+- CSP con nonces.
+- HSTS con includeSubDomains.
+- 'X-Content-Type-Options: nosniff, X-Frame-Options, Referrer-Policy.'
+- drop_invalid_header_fields = true en ALB.
+verificacion: curl -I muestra los headers; atributo ALB routing.http.drop_invalid_header_fields.enabled es true.
+criterio_aceptacion: curl -I muestra los headers; atributo ALB routing.http.drop_invalid_header_fields.enabled es true.
+fragmentos_regex:
+- '(?i)strict-transport-security'
+- '(?i)content-security-policy'
+- '(?i)x-frame-options'
+- '(?i)x-content-type-options'
+- 'drop_invalid_header_fields'
+aplica_con_llm: false

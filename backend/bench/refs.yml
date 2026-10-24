@@ -1,0 +1,78 @@
+# Referencia de repositorios de benchmark para evaluación de precisión
+# Evaluación de Recall / TPR, False Positive Rate (FPR) y desglose por categorías CWE
+#
+# El motor de análisis (analyzer.py) nunca conoce estos nombres: solo recibe rutas
+# a directorios. Cada referencia admite una ruta local (se copia al workspace del run)
+# o una URL git http(s):// / git@ (se clona con --depth 1). El workspace se crea en
+# /tmp/bench-repos-run (ignorado por git) y se elimina al terminar cada corrida.
+repositories:
+  # Ground truth con vulnerabilities.json: campos vuln_code_snippet (ruta del archivo)
+  # y vuln_line; el cruce con los hallazgos es por archivo con tolerancia de 3 líneas.
+  - id: "repo-juice-sample"
+    url: "bench/examples/juice-shop-sample"
+    name: "OWASP Juice Shop"
+    type: "owasp"
+    format: "vuln-markers"
+    description: "Vectores de OWASP Juice Shop (CWE-89 SQLi, CWE-798 JWT Secret, CWE-22 Path Traversal, CWE-78 Command Injection)"
+
+  # Ground truth en expectedresults-0.1.csv: cada fila es un caso de prueba
+  # (TestCaseNumber + CWE); el cruce con los hallazgos es por caso de prueba y CWE.
+  - id: "repo-benchmark-python"
+    url: "bench/examples/benchmark-python"
+    name: "BenchmarkPython"
+    type: "synthetic"
+    format: "csv-expected-results"
+    description: "Casos de prueba Python (CWE-78 Command Injection, CWE-89 SQLi, CWE-327 Weak Hash) más un caso seguro sin CWE"
+
+  - id: "repo-tiny-example"
+    url: "bench/examples/tiny-vuln-app"
+    name: "Tiny Vulnerable App"
+    type: "synthetic"
+    format: "vuln-markers"
+    description: "Aplicación sintética con 5 vulnerabilidades (CWE-78, CWE-89, CWE-94, CWE-327, CWE-798)"
+
+  - id: "repo-web-benchmark"
+    url: "bench/examples/owasp-web-bench"
+    name: "OWASP Web Benchmark"
+    type: "owasp"
+    format: "vuln-markers"
+    description: "Servicio Web con vectores OWASP (CWE-79 XSS, CWE-22 Path Traversal, CWE-502 Deserialización, CWE-798 Secret)"
+
+  - id: "repo-api-auth-bench"
+    url: "bench/examples/api-auth-bench"
+    name: "API & Authentication Benchmark"
+    type: "api-security"
+    format: "vuln-markers"
+    description: "Servicio API (CWE-798 API Key, CWE-327 Weak Hash MD5, CWE-89 SQLi, CWE-94 Code Injection Eval)"
+
+  # --- Repos reales (commits fijados: corridas reproducibles) ---
+
+  # OWASP Benchmark for Python real: 1230 casos en expectedresults-0.1.csv
+  # (formato original "# test name, category, real vulnerability, cwe").
+  # REPO RESERVADO (holdout): no se usa para escribir ni ajustar reglas —
+  # las reglas se redactan solo desde el inventario v1.0 y los ejemplos propios.
+  - id: "repo-owasp-benchmark-python"
+    url: "https://github.com/OWASP-Benchmark/BenchmarkPython"
+    commit: "f1291485808b66e20ddb6b01b10dc71b3df8c8ba"
+    name: "OWASP Benchmark for Python"
+    type: "synthetic"
+    format: "csv-expected-results"
+    description: "Benchmark OWASP Python real (1230 casos: inyección SQL, path traversal, comandos, LDAP, XPATH, XSS, cripto débil; casos T y F) en testcode/"
+
+  # Juice Shop real. El repo NO publica ground truth por código (su challenges.yml
+  # no mapea archivo+línea), así que corre como humo de FPR: hallazgos reales sin
+  # inventar TPR. La medición de TPR/FPR por categoría viene del BenchmarkPython real.
+  - id: "repo-juice-shop-real"
+    url: "https://github.com/juice-shop/juice-shop"
+    commit: "717f5efa886b0417eeecb52378b03cf10567b7e2"
+    name: "OWASP Juice Shop"
+    type: "owasp"
+    format: "fpr-smoke"
+    description: "OWASP Juice Shop real (Node/TS) como corrida de humo: volumen y ruido de hallazgos sobre una app intencionalmente vulnerable"
+
+  - id: "repo-controles-violaciones"
+    url: "bench/examples/controls-bench"
+    name: "Controles Inventario v1.0 (violaciones inyectadas)"
+    type: "synthetic"
+    format: "vuln-markers"
+    description: "13 violaciones conocidas del inventario de controles v1.0 (CWE-942 CORS, CWE-89 SQLi, CWE-489 DEBUG, CWE-770 rate limit y LLM, CWE-1004 cookies, CWE-613 JWT, CWE-918 SSRF, CWE-532 logs) más casos seguros gemelos para medir FPR"

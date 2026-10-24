@@ -1,0 +1,31 @@
+id: "14"
+nombre: TLS 1.2 mínimo en el balanceador
+categoria_owasp: A02
+criticidad_referencia: ALTO
+familia: Secretos y criptografía
+metodo: nube
+donde_buscar:
+- '**/*.tf'
+senales_incumplimiento:
+- Listener sin ssl_policy o con política antigua (ej. ELBSecurityPolicy-2016-08)
+- HTTP sin redirección a HTTPS
+falsos_positivos:
+- Listener HTTP en puerto 80 que existe únicamente para redirigir a HTTPS.
+- ssl_policy moderna (TLS 1.2+) ya configurada en el listener.
+herramientas:
+- checkov
+- aws-cli
+- openssl
+ia_revisa: Que el balanceador no negocie versiones de TLS inferiores a 1.2, juzgando listeners sin ssl_policy o con política
+  antigua y ausencia de redirección de HTTP a HTTPS.
+remediacion:
+- 'Configurar ssl_policy = "ELBSecurityPolicy-TLS13-1-2-2021-06".'
+- Redirigir puerto 80 al 443.
+verificacion: aws elbv2 describe-listeners muestra TLS 1.2+; openssl s_client -connect host:443 -tls1_1 falla.
+criterio_aceptacion: aws elbv2 describe-listeners muestra TLS 1.2+; openssl s_client -connect host:443 -tls1_1 falla.
+fragmentos_regex:
+- 'ssl_policy'
+- 'ELBSecurityPolicy'
+- 'aws_lb_listener|aws_cloudfront_distribution'
+- '(?i)tls1'
+aplica_con_llm: false
