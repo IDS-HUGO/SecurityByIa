@@ -1,0 +1,2174 @@
+{
+  "run_id": "bench_20261024_160402_297e7e",
+  "timestamp": "2026-10-24T16:04:02.747199+00:00",
+  "date_formatted": "24 Oct 2026, 16:04:02 UTC",
+  "feature": "p0-3-real-benchmark",
+  "is_baseline": true,
+  "duration_seconds": 193.72,
+  "metadata": {
+    "semgrep_version": "1.182.1",
+    "rules": {
+      "local_rules_file": "rules/security-rules.yml",
+      "local_rules_loaded": true,
+      "local_rule_ids": [
+        {
+          "id": "py-command-injection",
+          "cwe": "CWE-78"
+        },
+        {
+          "id": "py-sql-injection-concat",
+          "cwe": "CWE-89"
+        },
+        {
+          "id": "py-code-injection-eval",
+          "cwe": "CWE-94"
+        },
+        {
+          "id": "py-broken-crypto-md5",
+          "cwe": "CWE-327"
+        },
+        {
+          "id": "py-hardcoded-secret",
+          "cwe": "CWE-798"
+        },
+        {
+          "id": "py-path-traversal",
+          "cwe": "CWE-22"
+        },
+        {
+          "id": "py-insecure-deserialization",
+          "cwe": "CWE-502"
+        },
+        {
+          "id": "py-reflected-xss",
+          "cwe": "CWE-79"
+        }
+      ],
+      "registry_configs": [
+        "p/owasp-top-ten"
+      ]
+    },
+    "tool_commit": "a7e1e923732d05d4de906b42799fc3de99ed85bf"
+  },
+  "summary": {
+    "total_repos": 1,
+    "total_ground_truth": 452,
+    "total_detected": 595,
+    "true_positives": 47,
+    "false_positives": 548,
+    "false_negatives": 405,
+    "avg_recall": 0.104,
+    "avg_tpr": 0.104,
+    "avg_fpr": 0.921,
+    "avg_precision": 0.079,
+    "avg_f1_score": 0.09
+  },
+  "comparison": {
+    "has_previous": true,
+    "delta_recall_pts": -29.6,
+    "delta_tpr_pts": -29.6,
+    "delta_fpr_pts": 77.8,
+    "delta_precision_pts": -77.8,
+    "delta_f1_pts": -45.5,
+    "previous_run_id": "bench_20261022_055932_315da8",
+    "previous_timestamp": "2026-10-22T05:59:32.010169+00:00",
+    "previous_feature": "controles-sin-reglas"
+  },
+  "baseline_comparison": {
+    "has_previous": true,
+    "delta_recall_pts": -72.9,
+    "delta_tpr_pts": -72.9,
+    "delta_fpr_pts": 59.1,
+    "delta_precision_pts": -59.1,
+    "delta_f1_pts": -63.6,
+    "baseline_timestamp": "2026-10-16T22:34:07.199262+00:00",
+    "baseline_feature": "Motor de Análisis SAST con Reglas OWASP Top 10 + Secrets"
+  },
+  "repositories": [
+    {
+      "id": "repo-owasp-benchmark-python",
+      "name": "OWASP Benchmark for Python",
+      "type": "synthetic",
+      "format": "csv-expected-results",
+      "description": "Benchmark OWASP Python real (1230 casos: inyección SQL, path traversal, comandos, LDAP, XPATH, XSS, cripto débil; casos T y F) en testcode/",
+      "commit": "f1291485808b66e20ddb6b01b10dc71b3df8c8ba",
+      "metrics": {
+        "true_positives": 47,
+        "false_positives": 548,
+        "false_negatives": 405,
+        "total_ground_truth": 452,
+        "total_detected": 595,
+        "recall": 0.104,
+        "tpr": 0.104,
+        "fpr": 0.921,
+        "precision": 0.079,
+        "f1_score": 0.09
+      },
+      "comparison": {
+        "has_previous": false,
+        "delta_recall_pts": 0.0,
+        "delta_tpr_pts": 0.0,
+        "delta_fpr_pts": 0.0,
+        "delta_precision_pts": 0.0,
+        "delta_f1_pts": 0.0
+      },
+      "findings_detected": 595,
+      "ground_truth_count": 452,
+      "sample_findings": [
+        {
+          "id": 1,
+          "rule": "rules.vendor.python.lang.security.use-defused-xml-parse.use-defused-xml-parse",
+          "owasp": "A05:2021 - Security Misconfiguration",
+          "cwe": [
+            "CWE-611"
+          ],
+          "references": [
+            "https://docs.python.org/3/library/xml.html",
+            "https://github.com/tiran/defusedxml",
+            "https://owasp.org/www-community/vulnerabilities/XML_External_Entity_(XXE)_Processing"
+          ],
+          "severity": "medium",
+          "severity_reason": "Severidad medium: vulnerabilidad en código en código base, asociado al Control 5: Configuración Segura de Infraestructura y Contenedores.",
+          "remediation_deadline": "90 días",
+          "file": "testcode/BenchmarkTest00013.py",
+          "line": 55,
+          "title": "The native Python `xml` library is vulnerable to XML External Entity (XXE) attacks.  These attacks can leak confidential data and \"XML bombs\" can cause denial of service. Do not use this library to parse untrusted input. Instead  the Python documentation recommends using `defusedxml`.",
+          "problem": "The native Python `xml` library is vulnerable to XML External Entity (XXE) attacks.  These attacks can leak confidential data and \"XML bombs\" can cause denial of service. Do not use this library to parse untrusted input. Instead  the Python documentation recommends using `defusedxml`.",
+          "solution": "Review the finding and apply the secure coding guidance for this rule.",
+          "false_positive": false,
+          "status": "open",
+          "code": "requires login",
+          "code_context": [
+            {
+              "line": 45,
+              "text": "\t\t\tlst.append(param)"
+            },
+            {
+              "line": 46,
+              "text": "\t\t\tlst.append('moresafe')"
+            },
+            {
+              "line": 47,
+              "text": "\t\t\tlst.pop(0)"
+            },
+            {
+              "line": 48,
+              "text": "\t\t\tbar = lst[1]"
+            },
+            {
+              "line": 49,
+              "text": ""
+            },
+            {
+              "line": 50,
+              "text": "\t\timport elementpath"
+            },
+            {
+              "line": 51,
+              "text": "\t\timport xml.etree.ElementTree as ET"
+            },
+            {
+              "line": 52,
+              "text": "\t\timport helpers.utils"
+            },
+            {
+              "line": 53,
+              "text": ""
+            },
+            {
+              "line": 54,
+              "text": "\t\ttry:"
+            },
+            {
+              "line": 55,
+              "text": "\t\t\troot = ET.parse(f'{helpers.utils.RES_DIR}/employees.xml')"
+            },
+            {
+              "line": 56,
+              "text": "\t\t\tquery = f\"/Employees/Employee[@emplid=\\'{bar}\\']\""
+            },
+            {
+              "line": 57,
+              "text": "\t\t\tnodes = elementpath.select(root, query)"
+            },
+            {
+              "line": 58,
+              "text": "\t\t\tnode_strings = []"
+            },
+            {
+              "line": 59,
+              "text": "\t\t\tfor node in nodes:"
+            },
+            {
+              "line": 60,
+              "text": "\t\t\t\tnode_strings.append(' '.join([e.text for e in node]))"
+            },
+            {
+              "line": 61,
+              "text": ""
+            },
+            {
+              "line": 62,
+              "text": "\t\t\tRESPONSE += ("
+            },
+            {
+              "line": 63,
+              "text": "\t\t\t\tf'Your XPATH query results are: <br>[ {', '.join(node_strings)} ]'"
+            },
+            {
+              "line": 64,
+              "text": "\t\t\t)"
+            }
+          ],
+          "sources": {
+            "id": "semgrep",
+            "rule": "semgrep",
+            "owasp": "semgrep",
+            "cwe": "semgrep",
+            "references": "semgrep",
+            "severity": "semgrep",
+            "severity_reason": "semgrep",
+            "remediation_deadline": "semgrep",
+            "file": "semgrep",
+            "line": "semgrep",
+            "title": "semgrep",
+            "problem": "semgrep",
+            "solution": "semgrep",
+            "false_positive": "semgrep",
+            "status": "semgrep",
+            "code": "semgrep",
+            "code_context": "semgrep"
+          },
+          "tools": [
+            "semgrep"
+          ],
+          "remediation": {
+            "status": "open",
+            "diff": null,
+            "touched_files": [
+              "testcode/BenchmarkTest00013.py"
+            ],
+            "method": null,
+            "explanation": null,
+            "verification": null
+          },
+          "triage": {
+            "verdict": "verdadero",
+            "confidence": 1.0,
+            "reason": "Detección directa por regla del escáner estático.",
+            "decided_by": "regla",
+            "model": "static-rules",
+            "timestamp": "2026-10-24T16:04:52.207100+00:00"
+          },
+          "matched": false,
+          "match_score": 0.0,
+          "gt_cwe": null,
+          "gt_line": null,
+          "gt_rule": null
+        },
+        {
+          "id": 2,
+          "rule": "rules.py-sql-injection-concat",
+          "owasp": "A03:2021 - Injection",
+          "cwe": [
+            "CWE-89"
+          ],
+          "references": [],
+          "severity": "critical",
+          "severity_reason": "Severidad critical: inyección crítica o ejecución remota de comandos en código base, asociado al Control 4: Validación y Sanitización de Entradas e Inyecciones.",
+          "remediation_deadline": "48 horas",
+          "file": "testcode/BenchmarkTest00013.py",
+          "line": 56,
+          "title": "Detected SQL injection risk: dynamic SQL query constructed via concatenation.",
+          "problem": "Detected SQL injection risk: dynamic SQL query constructed via concatenation.",
+          "solution": "Review the finding and apply the secure coding guidance for this rule.",
+          "false_positive": false,
+          "status": "open",
+          "code": "requires login",
+          "code_context": [
+            {
+              "line": 46,
+              "text": "\t\t\tlst.append('moresafe')"
+            },
+            {
+              "line": 47,
+              "text": "\t\t\tlst.pop(0)"
+            },
+            {
+              "line": 48,
+              "text": "\t\t\tbar = lst[1]"
+            },
+            {
+              "line": 49,
+              "text": ""
+            },
+            {
+              "line": 50,
+              "text": "\t\timport elementpath"
+            },
+            {
+              "line": 51,
+              "text": "\t\timport xml.etree.ElementTree as ET"
+            },
+            {
+              "line": 52,
+              "text": "\t\timport helpers.utils"
+            },
+            {
+              "line": 53,
+              "text": ""
+            },
+            {
+              "line": 54,
+              "text": "\t\ttry:"
+            },
+            {
+              "line": 55,
+              "text": "\t\t\troot = ET.parse(f'{helpers.utils.RES_DIR}/employees.xml')"
+            },
+            {
+              "line": 56,
+              "text": "\t\t\tquery = f\"/Employees/Employee[@emplid=\\'{bar}\\']\""
+            },
+            {
+              "line": 57,
+              "text": "\t\t\tnodes = elementpath.select(root, query)"
+            },
+            {
+              "line": 58,
+              "text": "\t\t\tnode_strings = []"
+            },
+            {
+              "line": 59,
+              "text": "\t\t\tfor node in nodes:"
+            },
+            {
+              "line": 60,
+              "text": "\t\t\t\tnode_strings.append(' '.join([e.text for e in node]))"
+            },
+            {
+              "line": 61,
+              "text": ""
+            },
+            {
+              "line": 62,
+              "text": "\t\t\tRESPONSE += ("
+            },
+            {
+              "line": 63,
+              "text": "\t\t\t\tf'Your XPATH query results are: <br>[ {', '.join(node_strings)} ]'"
+            },
+            {
+              "line": 64,
+              "text": "\t\t\t)"
+            },
+            {
+              "line": 65,
+              "text": "\t\texcept:"
+            }
+          ],
+          "sources": {
+            "id": "semgrep",
+            "rule": "semgrep",
+            "owasp": "semgrep",
+            "cwe": "semgrep",
+            "references": "semgrep",
+            "severity": "semgrep",
+            "severity_reason": "semgrep",
+            "remediation_deadline": "semgrep",
+            "file": "semgrep",
+            "line": "semgrep",
+            "title": "semgrep",
+            "problem": "semgrep",
+            "solution": "semgrep",
+            "false_positive": "semgrep",
+            "status": "semgrep",
+            "code": "semgrep",
+            "code_context": "semgrep"
+          },
+          "tools": [
+            "semgrep"
+          ],
+          "remediation": {
+            "status": "open",
+            "diff": null,
+            "touched_files": [
+              "testcode/BenchmarkTest00013.py"
+            ],
+            "method": null,
+            "explanation": null,
+            "verification": null
+          },
+          "triage": {
+            "verdict": "verdadero",
+            "confidence": 1.0,
+            "reason": "Detección directa por regla del escáner estático.",
+            "decided_by": "regla",
+            "model": "static-rules",
+            "timestamp": "2026-10-24T16:04:52.207422+00:00"
+          },
+          "matched": false,
+          "match_score": 0.0,
+          "gt_cwe": null,
+          "gt_line": null,
+          "gt_rule": null
+        },
+        {
+          "id": 3,
+          "rule": "rules.vendor.python.lang.security.use-defused-xml-parse.use-defused-xml-parse",
+          "owasp": "A05:2021 - Security Misconfiguration",
+          "cwe": [
+            "CWE-611"
+          ],
+          "references": [
+            "https://docs.python.org/3/library/xml.html",
+            "https://github.com/tiran/defusedxml",
+            "https://owasp.org/www-community/vulnerabilities/XML_External_Entity_(XXE)_Processing"
+          ],
+          "severity": "medium",
+          "severity_reason": "Severidad medium: vulnerabilidad en código en código base, asociado al Control 5: Configuración Segura de Infraestructura y Contenedores.",
+          "remediation_deadline": "90 días",
+          "file": "testcode/BenchmarkTest00014.py",
+          "line": 56,
+          "title": "The native Python `xml` library is vulnerable to XML External Entity (XXE) attacks.  These attacks can leak confidential data and \"XML bombs\" can cause denial of service. Do not use this library to parse untrusted input. Instead  the Python documentation recommends using `defusedxml`.",
+          "problem": "The native Python `xml` library is vulnerable to XML External Entity (XXE) attacks.  These attacks can leak confidential data and \"XML bombs\" can cause denial of service. Do not use this library to parse untrusted input. Instead  the Python documentation recommends using `defusedxml`.",
+          "solution": "Review the finding and apply the secure coding guidance for this rule.",
+          "false_positive": false,
+          "status": "open",
+          "code": "requires login",
+          "code_context": [
+            {
+              "line": 46,
+              "text": "\t\timport xml.etree.ElementTree as ET"
+            },
+            {
+              "line": 47,
+              "text": "\t\timport helpers.utils"
+            },
+            {
+              "line": 48,
+              "text": ""
+            },
+            {
+              "line": 49,
+              "text": "\t\tif '\\'' in bar:"
+            },
+            {
+              "line": 50,
+              "text": "\t\t\tRESPONSE += ("
+            },
+            {
+              "line": 51,
+              "text": "\t\t\t\t\"Employee ID must not contain apostrophes\""
+            },
+            {
+              "line": 52,
+              "text": "\t\t\t)"
+            },
+            {
+              "line": 53,
+              "text": "\t\t\treturn RESPONSE"
+            },
+            {
+              "line": 54,
+              "text": ""
+            },
+            {
+              "line": 55,
+              "text": "\t\ttry:"
+            },
+            {
+              "line": 56,
+              "text": "\t\t\troot = ET.parse(f'{helpers.utils.RES_DIR}/employees.xml')"
+            },
+            {
+              "line": 57,
+              "text": "\t\t\tquery = f\"/Employees/Employee[@emplid=\\'{bar}\\']\""
+            },
+            {
+              "line": 58,
+              "text": "\t\t\tnodes = elementpath.select(root, query)"
+            },
+            {
+              "line": 59,
+              "text": "\t\t\tnode_strings = []"
+            },
+            {
+              "line": 60,
+              "text": "\t\t\tfor node in nodes:"
+            },
+            {
+              "line": 61,
+              "text": "\t\t\t\tnode_strings.append(' '.join([e.text for e in node]))"
+            },
+            {
+              "line": 62,
+              "text": ""
+            },
+            {
+              "line": 63,
+              "text": "\t\t\tRESPONSE += ("
+            },
+            {
+              "line": 64,
+              "text": "\t\t\t\tf'Your XPATH query results are: <br>[ {', '.join(node_strings)} ]'"
+            },
+            {
+              "line": 65,
+              "text": "\t\t\t)"
+            }
+          ],
+          "sources": {
+            "id": "semgrep",
+            "rule": "semgrep",
+            "owasp": "semgrep",
+            "cwe": "semgrep",
+            "references": "semgrep",
+            "severity": "semgrep",
+            "severity_reason": "semgrep",
+            "remediation_deadline": "semgrep",
+            "file": "semgrep",
+            "line": "semgrep",
+            "title": "semgrep",
+            "problem": "semgrep",
+            "solution": "semgrep",
+            "false_positive": "semgrep",
+            "status": "semgrep",
+            "code": "semgrep",
+            "code_context": "semgrep"
+          },
+          "tools": [
+            "semgrep"
+          ],
+          "remediation": {
+            "status": "open",
+            "diff": null,
+            "touched_files": [
+              "testcode/BenchmarkTest00014.py"
+            ],
+            "method": null,
+            "explanation": null,
+            "verification": null
+          },
+          "triage": {
+            "verdict": "verdadero",
+            "confidence": 1.0,
+            "reason": "Detección directa por regla del escáner estático.",
+            "decided_by": "regla",
+            "model": "static-rules",
+            "timestamp": "2026-10-24T16:04:52.207691+00:00"
+          },
+          "matched": false,
+          "match_score": 0.0,
+          "gt_cwe": null,
+          "gt_line": null,
+          "gt_rule": null
+        },
+        {
+          "id": 4,
+          "rule": "rules.py-sql-injection-concat",
+          "owasp": "A03:2021 - Injection",
+          "cwe": [
+            "CWE-89"
+          ],
+          "references": [],
+          "severity": "critical",
+          "severity_reason": "Severidad critical: inyección crítica o ejecución remota de comandos en código base, asociado al Control 4: Validación y Sanitización de Entradas e Inyecciones.",
+          "remediation_deadline": "48 horas",
+          "file": "testcode/BenchmarkTest00014.py",
+          "line": 57,
+          "title": "Detected SQL injection risk: dynamic SQL query constructed via concatenation.",
+          "problem": "Detected SQL injection risk: dynamic SQL query constructed via concatenation.",
+          "solution": "Review the finding and apply the secure coding guidance for this rule.",
+          "false_positive": false,
+          "status": "open",
+          "code": "requires login",
+          "code_context": [
+            {
+              "line": 47,
+              "text": "\t\timport helpers.utils"
+            },
+            {
+              "line": 48,
+              "text": ""
+            },
+            {
+              "line": 49,
+              "text": "\t\tif '\\'' in bar:"
+            },
+            {
+              "line": 50,
+              "text": "\t\t\tRESPONSE += ("
+            },
+            {
+              "line": 51,
+              "text": "\t\t\t\t\"Employee ID must not contain apostrophes\""
+            },
+            {
+              "line": 52,
+              "text": "\t\t\t)"
+            },
+            {
+              "line": 53,
+              "text": "\t\t\treturn RESPONSE"
+            },
+            {
+              "line": 54,
+              "text": ""
+            },
+            {
+              "line": 55,
+              "text": "\t\ttry:"
+            },
+            {
+              "line": 56,
+              "text": "\t\t\troot = ET.parse(f'{helpers.utils.RES_DIR}/employees.xml')"
+            },
+            {
+              "line": 57,
+              "text": "\t\t\tquery = f\"/Employees/Employee[@emplid=\\'{bar}\\']\""
+            },
+            {
+              "line": 58,
+              "text": "\t\t\tnodes = elementpath.select(root, query)"
+            },
+            {
+              "line": 59,
+              "text": "\t\t\tnode_strings = []"
+            },
+            {
+              "line": 60,
+              "text": "\t\t\tfor node in nodes:"
+            },
+            {
+              "line": 61,
+              "text": "\t\t\t\tnode_strings.append(' '.join([e.text for e in node]))"
+            },
+            {
+              "line": 62,
+              "text": ""
+            },
+            {
+              "line": 63,
+              "text": "\t\t\tRESPONSE += ("
+            },
+            {
+              "line": 64,
+              "text": "\t\t\t\tf'Your XPATH query results are: <br>[ {', '.join(node_strings)} ]'"
+            },
+            {
+              "line": 65,
+              "text": "\t\t\t)"
+            },
+            {
+              "line": 66,
+              "text": "\t\texcept:"
+            }
+          ],
+          "sources": {
+            "id": "semgrep",
+            "rule": "semgrep",
+            "owasp": "semgrep",
+            "cwe": "semgrep",
+            "references": "semgrep",
+            "severity": "semgrep",
+            "severity_reason": "semgrep",
+            "remediation_deadline": "semgrep",
+            "file": "semgrep",
+            "line": "semgrep",
+            "title": "semgrep",
+            "problem": "semgrep",
+            "solution": "semgrep",
+            "false_positive": "semgrep",
+            "status": "semgrep",
+            "code": "semgrep",
+            "code_context": "semgrep"
+          },
+          "tools": [
+            "semgrep"
+          ],
+          "remediation": {
+            "status": "open",
+            "diff": null,
+            "touched_files": [
+              "testcode/BenchmarkTest00014.py"
+            ],
+            "method": null,
+            "explanation": null,
+            "verification": null
+          },
+          "triage": {
+            "verdict": "verdadero",
+            "confidence": 1.0,
+            "reason": "Detección directa por regla del escáner estático.",
+            "decided_by": "regla",
+            "model": "static-rules",
+            "timestamp": "2026-10-24T16:04:52.207964+00:00"
+          },
+          "matched": false,
+          "match_score": 0.0,
+          "gt_cwe": null,
+          "gt_line": null,
+          "gt_rule": null
+        },
+        {
+          "id": 5,
+          "rule": "rules.vendor.python.lang.security.use-defused-xml-parse.use-defused-xml-parse",
+          "owasp": "A05:2021 - Security Misconfiguration",
+          "cwe": [
+            "CWE-611"
+          ],
+          "references": [
+            "https://docs.python.org/3/library/xml.html",
+            "https://github.com/tiran/defusedxml",
+            "https://owasp.org/www-community/vulnerabilities/XML_External_Entity_(XXE)_Processing"
+          ],
+          "severity": "medium",
+          "severity_reason": "Severidad medium: vulnerabilidad en código en código base, asociado al Control 5: Configuración Segura de Infraestructura y Contenedores.",
+          "remediation_deadline": "90 días",
+          "file": "testcode/BenchmarkTest00015.py",
+          "line": 56,
+          "title": "The native Python `xml` library is vulnerable to XML External Entity (XXE) attacks.  These attacks can leak confidential data and \"XML bombs\" can cause denial of service. Do not use this library to parse untrusted input. Instead  the Python documentation recommends using `defusedxml`.",
+          "problem": "The native Python `xml` library is vulnerable to XML External Entity (XXE) attacks.  These attacks can leak confidential data and \"XML bombs\" can cause denial of service. Do not use this library to parse untrusted input. Instead  the Python documentation recommends using `defusedxml`.",
+          "solution": "Review the finding and apply the secure coding guidance for this rule.",
+          "false_positive": false,
+          "status": "open",
+          "code": "requires login",
+          "code_context": [
+            {
+              "line": 46,
+              "text": "\t\timport xml.etree.ElementTree as ET"
+            },
+            {
+              "line": 47,
+              "text": "\t\timport helpers.utils"
+            },
+            {
+              "line": 48,
+              "text": ""
+            },
+            {
+              "line": 49,
+              "text": "\t\tif '\\'' in bar:"
+            },
+            {
+              "line": 50,
+              "text": "\t\t\tRESPONSE += ("
+            },
+            {
+              "line": 51,
+              "text": "\t\t\t\t\"Employee ID must not contain apostrophes\""
+            },
+            {
+              "line": 52,
+              "text": "\t\t\t)"
+            },
+            {
+              "line": 53,
+              "text": "\t\t\treturn RESPONSE"
+            },
+            {
+              "line": 54,
+              "text": ""
+            },
+            {
+              "line": 55,
+              "text": "\t\ttry:"
+            },
+            {
+              "line": 56,
+              "text": "\t\t\troot = ET.parse(f'{helpers.utils.RES_DIR}/employees.xml')"
+            },
+            {
+              "line": 57,
+              "text": "\t\t\tquery = f\"/Employees/Employee[@emplid=\\'{bar}\\']\""
+            },
+            {
+              "line": 58,
+              "text": "\t\t\tnodes = elementpath.select(root, query)"
+            },
+            {
+              "line": 59,
+              "text": "\t\t\tnode_strings = []"
+            },
+            {
+              "line": 60,
+              "text": "\t\t\tfor node in nodes:"
+            },
+            {
+              "line": 61,
+              "text": "\t\t\t\tnode_strings.append(' '.join([e.text for e in node]))"
+            },
+            {
+              "line": 62,
+              "text": ""
+            },
+            {
+              "line": 63,
+              "text": "\t\t\tRESPONSE += ("
+            },
+            {
+              "line": 64,
+              "text": "\t\t\t\tf'Your XPATH query results are: <br>[ {', '.join(node_strings)} ]'"
+            },
+            {
+              "line": 65,
+              "text": "\t\t\t)"
+            }
+          ],
+          "sources": {
+            "id": "semgrep",
+            "rule": "semgrep",
+            "owasp": "semgrep",
+            "cwe": "semgrep",
+            "references": "semgrep",
+            "severity": "semgrep",
+            "severity_reason": "semgrep",
+            "remediation_deadline": "semgrep",
+            "file": "semgrep",
+            "line": "semgrep",
+            "title": "semgrep",
+            "problem": "semgrep",
+            "solution": "semgrep",
+            "false_positive": "semgrep",
+            "status": "semgrep",
+            "code": "semgrep",
+            "code_context": "semgrep"
+          },
+          "tools": [
+            "semgrep"
+          ],
+          "remediation": {
+            "status": "open",
+            "diff": null,
+            "touched_files": [
+              "testcode/BenchmarkTest00015.py"
+            ],
+            "method": null,
+            "explanation": null,
+            "verification": null
+          },
+          "triage": {
+            "verdict": "verdadero",
+            "confidence": 1.0,
+            "reason": "Detección directa por regla del escáner estático.",
+            "decided_by": "regla",
+            "model": "static-rules",
+            "timestamp": "2026-10-24T16:04:52.208232+00:00"
+          },
+          "matched": false,
+          "match_score": 0.0,
+          "gt_cwe": null,
+          "gt_line": null,
+          "gt_rule": null
+        },
+        {
+          "id": 6,
+          "rule": "rules.py-sql-injection-concat",
+          "owasp": "A03:2021 - Injection",
+          "cwe": [
+            "CWE-89"
+          ],
+          "references": [],
+          "severity": "critical",
+          "severity_reason": "Severidad critical: inyección crítica o ejecución remota de comandos en código base, asociado al Control 4: Validación y Sanitización de Entradas e Inyecciones.",
+          "remediation_deadline": "48 horas",
+          "file": "testcode/BenchmarkTest00015.py",
+          "line": 57,
+          "title": "Detected SQL injection risk: dynamic SQL query constructed via concatenation.",
+          "problem": "Detected SQL injection risk: dynamic SQL query constructed via concatenation.",
+          "solution": "Review the finding and apply the secure coding guidance for this rule.",
+          "false_positive": false,
+          "status": "open",
+          "code": "requires login",
+          "code_context": [
+            {
+              "line": 47,
+              "text": "\t\timport helpers.utils"
+            },
+            {
+              "line": 48,
+              "text": ""
+            },
+            {
+              "line": 49,
+              "text": "\t\tif '\\'' in bar:"
+            },
+            {
+              "line": 50,
+              "text": "\t\t\tRESPONSE += ("
+            },
+            {
+              "line": 51,
+              "text": "\t\t\t\t\"Employee ID must not contain apostrophes\""
+            },
+            {
+              "line": 52,
+              "text": "\t\t\t)"
+            },
+            {
+              "line": 53,
+              "text": "\t\t\treturn RESPONSE"
+            },
+            {
+              "line": 54,
+              "text": ""
+            },
+            {
+              "line": 55,
+              "text": "\t\ttry:"
+            },
+            {
+              "line": 56,
+              "text": "\t\t\troot = ET.parse(f'{helpers.utils.RES_DIR}/employees.xml')"
+            },
+            {
+              "line": 57,
+              "text": "\t\t\tquery = f\"/Employees/Employee[@emplid=\\'{bar}\\']\""
+            },
+            {
+              "line": 58,
+              "text": "\t\t\tnodes = elementpath.select(root, query)"
+            },
+            {
+              "line": 59,
+              "text": "\t\t\tnode_strings = []"
+            },
+            {
+              "line": 60,
+              "text": "\t\t\tfor node in nodes:"
+            },
+            {
+              "line": 61,
+              "text": "\t\t\t\tnode_strings.append(' '.join([e.text for e in node]))"
+            },
+            {
+              "line": 62,
+              "text": ""
+            },
+            {
+              "line": 63,
+              "text": "\t\t\tRESPONSE += ("
+            },
+            {
+              "line": 64,
+              "text": "\t\t\t\tf'Your XPATH query results are: <br>[ {', '.join(node_strings)} ]'"
+            },
+            {
+              "line": 65,
+              "text": "\t\t\t)"
+            },
+            {
+              "line": 66,
+              "text": "\t\texcept:"
+            }
+          ],
+          "sources": {
+            "id": "semgrep",
+            "rule": "semgrep",
+            "owasp": "semgrep",
+            "cwe": "semgrep",
+            "references": "semgrep",
+            "severity": "semgrep",
+            "severity_reason": "semgrep",
+            "remediation_deadline": "semgrep",
+            "file": "semgrep",
+            "line": "semgrep",
+            "title": "semgrep",
+            "problem": "semgrep",
+            "solution": "semgrep",
+            "false_positive": "semgrep",
+            "status": "semgrep",
+            "code": "semgrep",
+            "code_context": "semgrep"
+          },
+          "tools": [
+            "semgrep"
+          ],
+          "remediation": {
+            "status": "open",
+            "diff": null,
+            "touched_files": [
+              "testcode/BenchmarkTest00015.py"
+            ],
+            "method": null,
+            "explanation": null,
+            "verification": null
+          },
+          "triage": {
+            "verdict": "verdadero",
+            "confidence": 1.0,
+            "reason": "Detección directa por regla del escáner estático.",
+            "decided_by": "regla",
+            "model": "static-rules",
+            "timestamp": "2026-10-24T16:04:52.208554+00:00"
+          },
+          "matched": false,
+          "match_score": 0.0,
+          "gt_cwe": null,
+          "gt_line": null,
+          "gt_rule": null
+        },
+        {
+          "id": 7,
+          "rule": "rules.vendor.python.lang.security.use-defused-xml-parse.use-defused-xml-parse",
+          "owasp": "A05:2021 - Security Misconfiguration",
+          "cwe": [
+            "CWE-611"
+          ],
+          "references": [
+            "https://docs.python.org/3/library/xml.html",
+            "https://github.com/tiran/defusedxml",
+            "https://owasp.org/www-community/vulnerabilities/XML_External_Entity_(XXE)_Processing"
+          ],
+          "severity": "medium",
+          "severity_reason": "Severidad medium: vulnerabilidad en código en código base, asociado al Control 5: Configuración Segura de Infraestructura y Contenedores.",
+          "remediation_deadline": "90 días",
+          "file": "testcode/BenchmarkTest00016.py",
+          "line": 58,
+          "title": "The native Python `xml` library is vulnerable to XML External Entity (XXE) attacks.  These attacks can leak confidential data and \"XML bombs\" can cause denial of service. Do not use this library to parse untrusted input. Instead  the Python documentation recommends using `defusedxml`.",
+          "problem": "The native Python `xml` library is vulnerable to XML External Entity (XXE) attacks.  These attacks can leak confidential data and \"XML bombs\" can cause denial of service. Do not use this library to parse untrusted input. Instead  the Python documentation recommends using `defusedxml`.",
+          "solution": "Review the finding and apply the secure coding guidance for this rule.",
+          "false_positive": false,
+          "status": "open",
+          "code": "requires login",
+          "code_context": [
+            {
+              "line": 48,
+              "text": "\t\timport xml.etree.ElementTree as ET"
+            },
+            {
+              "line": 49,
+              "text": "\t\timport helpers.utils"
+            },
+            {
+              "line": 50,
+              "text": ""
+            },
+            {
+              "line": 51,
+              "text": "\t\tif '\\'' in bar:"
+            },
+            {
+              "line": 52,
+              "text": "\t\t\tRESPONSE += ("
+            },
+            {
+              "line": 53,
+              "text": "\t\t\t\t\"Employee ID must not contain apostrophes\""
+            },
+            {
+              "line": 54,
+              "text": "\t\t\t)"
+            },
+            {
+              "line": 55,
+              "text": "\t\t\treturn RESPONSE"
+            },
+            {
+              "line": 56,
+              "text": ""
+            },
+            {
+              "line": 57,
+              "text": "\t\ttry:"
+            },
+            {
+              "line": 58,
+              "text": "\t\t\troot = ET.parse(f'{helpers.utils.RES_DIR}/employees.xml')"
+            },
+            {
+              "line": 59,
+              "text": "\t\t\tquery = f\"/Employees/Employee[@emplid=\\'{bar}\\']\""
+            },
+            {
+              "line": 60,
+              "text": "\t\t\tnodes = elementpath.select(root, query)"
+            },
+            {
+              "line": 61,
+              "text": "\t\t\tnode_strings = []"
+            },
+            {
+              "line": 62,
+              "text": "\t\t\tfor node in nodes:"
+            },
+            {
+              "line": 63,
+              "text": "\t\t\t\tnode_strings.append(' '.join([e.text for e in node]))"
+            },
+            {
+              "line": 64,
+              "text": ""
+            },
+            {
+              "line": 65,
+              "text": "\t\t\tRESPONSE += ("
+            },
+            {
+              "line": 66,
+              "text": "\t\t\t\tf'Your XPATH query results are: <br>[ {', '.join(node_strings)} ]'"
+            },
+            {
+              "line": 67,
+              "text": "\t\t\t)"
+            }
+          ],
+          "sources": {
+            "id": "semgrep",
+            "rule": "semgrep",
+            "owasp": "semgrep",
+            "cwe": "semgrep",
+            "references": "semgrep",
+            "severity": "semgrep",
+            "severity_reason": "semgrep",
+            "remediation_deadline": "semgrep",
+            "file": "semgrep",
+            "line": "semgrep",
+            "title": "semgrep",
+            "problem": "semgrep",
+            "solution": "semgrep",
+            "false_positive": "semgrep",
+            "status": "semgrep",
+            "code": "semgrep",
+            "code_context": "semgrep"
+          },
+          "tools": [
+            "semgrep"
+          ],
+          "remediation": {
+            "status": "open",
+            "diff": null,
+            "touched_files": [
+              "testcode/BenchmarkTest00016.py"
+            ],
+            "method": null,
+            "explanation": null,
+            "verification": null
+          },
+          "triage": {
+            "verdict": "verdadero",
+            "confidence": 1.0,
+            "reason": "Detección directa por regla del escáner estático.",
+            "decided_by": "regla",
+            "model": "static-rules",
+            "timestamp": "2026-10-24T16:04:52.209051+00:00"
+          },
+          "matched": false,
+          "match_score": 0.0,
+          "gt_cwe": null,
+          "gt_line": null,
+          "gt_rule": null
+        },
+        {
+          "id": 8,
+          "rule": "rules.py-sql-injection-concat",
+          "owasp": "A03:2021 - Injection",
+          "cwe": [
+            "CWE-89"
+          ],
+          "references": [],
+          "severity": "critical",
+          "severity_reason": "Severidad critical: inyección crítica o ejecución remota de comandos en código base, asociado al Control 4: Validación y Sanitización de Entradas e Inyecciones.",
+          "remediation_deadline": "48 horas",
+          "file": "testcode/BenchmarkTest00016.py",
+          "line": 59,
+          "title": "Detected SQL injection risk: dynamic SQL query constructed via concatenation.",
+          "problem": "Detected SQL injection risk: dynamic SQL query constructed via concatenation.",
+          "solution": "Review the finding and apply the secure coding guidance for this rule.",
+          "false_positive": false,
+          "status": "open",
+          "code": "requires login",
+          "code_context": [
+            {
+              "line": 49,
+              "text": "\t\timport helpers.utils"
+            },
+            {
+              "line": 50,
+              "text": ""
+            },
+            {
+              "line": 51,
+              "text": "\t\tif '\\'' in bar:"
+            },
+            {
+              "line": 52,
+              "text": "\t\t\tRESPONSE += ("
+            },
+            {
+              "line": 53,
+              "text": "\t\t\t\t\"Employee ID must not contain apostrophes\""
+            },
+            {
+              "line": 54,
+              "text": "\t\t\t)"
+            },
+            {
+              "line": 55,
+              "text": "\t\t\treturn RESPONSE"
+            },
+            {
+              "line": 56,
+              "text": ""
+            },
+            {
+              "line": 57,
+              "text": "\t\ttry:"
+            },
+            {
+              "line": 58,
+              "text": "\t\t\troot = ET.parse(f'{helpers.utils.RES_DIR}/employees.xml')"
+            },
+            {
+              "line": 59,
+              "text": "\t\t\tquery = f\"/Employees/Employee[@emplid=\\'{bar}\\']\""
+            },
+            {
+              "line": 60,
+              "text": "\t\t\tnodes = elementpath.select(root, query)"
+            },
+            {
+              "line": 61,
+              "text": "\t\t\tnode_strings = []"
+            },
+            {
+              "line": 62,
+              "text": "\t\t\tfor node in nodes:"
+            },
+            {
+              "line": 63,
+              "text": "\t\t\t\tnode_strings.append(' '.join([e.text for e in node]))"
+            },
+            {
+              "line": 64,
+              "text": ""
+            },
+            {
+              "line": 65,
+              "text": "\t\t\tRESPONSE += ("
+            },
+            {
+              "line": 66,
+              "text": "\t\t\t\tf'Your XPATH query results are: <br>[ {', '.join(node_strings)} ]'"
+            },
+            {
+              "line": 67,
+              "text": "\t\t\t)"
+            },
+            {
+              "line": 68,
+              "text": "\t\texcept:"
+            }
+          ],
+          "sources": {
+            "id": "semgrep",
+            "rule": "semgrep",
+            "owasp": "semgrep",
+            "cwe": "semgrep",
+            "references": "semgrep",
+            "severity": "semgrep",
+            "severity_reason": "semgrep",
+            "remediation_deadline": "semgrep",
+            "file": "semgrep",
+            "line": "semgrep",
+            "title": "semgrep",
+            "problem": "semgrep",
+            "solution": "semgrep",
+            "false_positive": "semgrep",
+            "status": "semgrep",
+            "code": "semgrep",
+            "code_context": "semgrep"
+          },
+          "tools": [
+            "semgrep"
+          ],
+          "remediation": {
+            "status": "open",
+            "diff": null,
+            "touched_files": [
+              "testcode/BenchmarkTest00016.py"
+            ],
+            "method": null,
+            "explanation": null,
+            "verification": null
+          },
+          "triage": {
+            "verdict": "verdadero",
+            "confidence": 1.0,
+            "reason": "Detección directa por regla del escáner estático.",
+            "decided_by": "regla",
+            "model": "static-rules",
+            "timestamp": "2026-10-24T16:04:52.209450+00:00"
+          },
+          "matched": false,
+          "match_score": 0.0,
+          "gt_cwe": null,
+          "gt_line": null,
+          "gt_rule": null
+        },
+        {
+          "id": 9,
+          "rule": "rules.vendor.python.django.security.injection.raw-html-format.raw-html-format",
+          "owasp": "A03:2021 - Injection",
+          "cwe": [
+            "CWE-79"
+          ],
+          "references": [
+            "https://docs.djangoproject.com/en/3.2/topics/http/shortcuts/#render",
+            "https://docs.djangoproject.com/en/3.2/topics/security/#cross-site-scripting-xss-protection",
+            "https://flask.palletsprojects.com/en/2.0.x/security/#cross-site-scripting-xss"
+          ],
+          "severity": "critical",
+          "severity_reason": "Severidad critical: vulnerabilidad de acceso o inyección en aplicación en código base, asociado al Control 4: Validación y Sanitización de Entradas e Inyecciones.",
+          "remediation_deadline": "48 horas",
+          "file": "testcode/BenchmarkTest00017.py",
+          "line": 63,
+          "title": "Detected user input flowing into a manually constructed HTML string. You may be accidentally bypassing secure methods of rendering HTML by manually constructing HTML and this could create a cross-site scripting vulnerability, which could let attackers steal sensitive user data. To be sure this is safe, check that the HTML is rendered safely. Otherwise, use templates (`django.shortcuts.render`) which will safely render HTML instead.",
+          "problem": "Detected user input flowing into a manually constructed HTML string. You may be accidentally bypassing secure methods of rendering HTML by manually constructing HTML and this could create a cross-site scripting vulnerability, which could let attackers steal sensitive user data. To be sure this is safe, check that the HTML is rendered safely. Otherwise, use templates (`django.shortcuts.render`) which will safely render HTML instead.",
+          "solution": "Review the finding and apply the secure coding guidance for this rule.",
+          "false_positive": false,
+          "status": "open",
+          "code": "requires login",
+          "code_context": [
+            {
+              "line": 53,
+              "text": ""
+            },
+            {
+              "line": 54,
+              "text": "\t\t\tout = ''"
+            },
+            {
+              "line": 55,
+              "text": "\t\t\tprocessing = [doc.documentElement]"
+            },
+            {
+              "line": 56,
+              "text": "\t\t\twhile processing:"
+            },
+            {
+              "line": 57,
+              "text": "\t\t\t\te = processing.pop(0)"
+            },
+            {
+              "line": 58,
+              "text": "\t\t\t\tif e.nodeType == xml.dom.Node.TEXT_NODE:"
+            },
+            {
+              "line": 59,
+              "text": "\t\t\t\t\tout += e.data"
+            },
+            {
+              "line": 60,
+              "text": "\t\t\t\telse:"
+            },
+            {
+              "line": 61,
+              "text": "\t\t\t\t\tprocessing[:0] = e.childNodes"
+            },
+            {
+              "line": 62,
+              "text": ""
+            },
+            {
+              "line": 63,
+              "text": "\t\t\tRESPONSE += ("
+            },
+            {
+              "line": 64,
+              "text": "\t\t\t\tf'Your XML doc results are: <br>{escape_for_html(out)}'"
+            },
+            {
+              "line": 65,
+              "text": "\t\t\t)"
+            },
+            {
+              "line": 66,
+              "text": "\t\texcept:"
+            },
+            {
+              "line": 67,
+              "text": "\t\t\tRESPONSE += ("
+            },
+            {
+              "line": 68,
+              "text": "\t\t\t\tf'There was an error reading your XML doc:<br>{escape_for_html(bar)}'"
+            },
+            {
+              "line": 69,
+              "text": "\t\t\t)"
+            },
+            {
+              "line": 70,
+              "text": ""
+            },
+            {
+              "line": 71,
+              "text": "\t\treturn RESPONSE"
+            },
+            {
+              "line": 72,
+              "text": ""
+            }
+          ],
+          "sources": {
+            "id": "semgrep",
+            "rule": "semgrep",
+            "owasp": "semgrep",
+            "cwe": "semgrep",
+            "references": "semgrep",
+            "severity": "semgrep",
+            "severity_reason": "semgrep",
+            "remediation_deadline": "semgrep",
+            "file": "semgrep",
+            "line": "semgrep",
+            "title": "semgrep",
+            "problem": "semgrep",
+            "solution": "semgrep",
+            "false_positive": "semgrep",
+            "status": "semgrep",
+            "code": "semgrep",
+            "code_context": "semgrep"
+          },
+          "tools": [
+            "semgrep"
+          ],
+          "remediation": {
+            "status": "open",
+            "diff": null,
+            "touched_files": [
+              "testcode/BenchmarkTest00017.py"
+            ],
+            "method": null,
+            "explanation": null,
+            "verification": null
+          },
+          "triage": {
+            "verdict": "verdadero",
+            "confidence": 1.0,
+            "reason": "Detección directa por regla del escáner estático.",
+            "decided_by": "regla",
+            "model": "static-rules",
+            "timestamp": "2026-10-24T16:04:52.209907+00:00"
+          },
+          "matched": false,
+          "match_score": 0.0,
+          "gt_cwe": null,
+          "gt_line": null,
+          "gt_rule": null
+        },
+        {
+          "id": 10,
+          "rule": "rules.vendor.python.django.security.injection.raw-html-format.raw-html-format",
+          "owasp": "A03:2021 - Injection",
+          "cwe": [
+            "CWE-79"
+          ],
+          "references": [
+            "https://docs.djangoproject.com/en/3.2/topics/http/shortcuts/#render",
+            "https://docs.djangoproject.com/en/3.2/topics/security/#cross-site-scripting-xss-protection",
+            "https://flask.palletsprojects.com/en/2.0.x/security/#cross-site-scripting-xss"
+          ],
+          "severity": "critical",
+          "severity_reason": "Severidad critical: vulnerabilidad de acceso o inyección en aplicación en código base, asociado al Control 4: Validación y Sanitización de Entradas e Inyecciones.",
+          "remediation_deadline": "48 horas",
+          "file": "testcode/BenchmarkTest00017.py",
+          "line": 67,
+          "title": "Detected user input flowing into a manually constructed HTML string. You may be accidentally bypassing secure methods of rendering HTML by manually constructing HTML and this could create a cross-site scripting vulnerability, which could let attackers steal sensitive user data. To be sure this is safe, check that the HTML is rendered safely. Otherwise, use templates (`django.shortcuts.render`) which will safely render HTML instead.",
+          "problem": "Detected user input flowing into a manually constructed HTML string. You may be accidentally bypassing secure methods of rendering HTML by manually constructing HTML and this could create a cross-site scripting vulnerability, which could let attackers steal sensitive user data. To be sure this is safe, check that the HTML is rendered safely. Otherwise, use templates (`django.shortcuts.render`) which will safely render HTML instead.",
+          "solution": "Review the finding and apply the secure coding guidance for this rule.",
+          "false_positive": false,
+          "status": "open",
+          "code": "requires login",
+          "code_context": [
+            {
+              "line": 53,
+              "text": ""
+            },
+            {
+              "line": 54,
+              "text": "\t\t\tout = ''"
+            },
+            {
+              "line": 55,
+              "text": "\t\t\tprocessing = [doc.documentElement]"
+            },
+            {
+              "line": 56,
+              "text": "\t\t\twhile processing:"
+            },
+            {
+              "line": 57,
+              "text": "\t\t\t\te = processing.pop(0)"
+            },
+            {
+              "line": 58,
+              "text": "\t\t\t\tif e.nodeType == xml.dom.Node.TEXT_NODE:"
+            },
+            {
+              "line": 59,
+              "text": "\t\t\t\t\tout += e.data"
+            },
+            {
+              "line": 60,
+              "text": "\t\t\t\telse:"
+            },
+            {
+              "line": 61,
+              "text": "\t\t\t\t\tprocessing[:0] = e.childNodes"
+            },
+            {
+              "line": 62,
+              "text": ""
+            },
+            {
+              "line": 63,
+              "text": "\t\t\tRESPONSE += ("
+            },
+            {
+              "line": 64,
+              "text": "\t\t\t\tf'Your XML doc results are: <br>{escape_for_html(out)}'"
+            },
+            {
+              "line": 65,
+              "text": "\t\t\t)"
+            },
+            {
+              "line": 66,
+              "text": "\t\texcept:"
+            },
+            {
+              "line": 67,
+              "text": "\t\t\tRESPONSE += ("
+            },
+            {
+              "line": 68,
+              "text": "\t\t\t\tf'There was an error reading your XML doc:<br>{escape_for_html(bar)}'"
+            },
+            {
+              "line": 69,
+              "text": "\t\t\t)"
+            },
+            {
+              "line": 70,
+              "text": ""
+            },
+            {
+              "line": 71,
+              "text": "\t\treturn RESPONSE"
+            },
+            {
+              "line": 72,
+              "text": ""
+            }
+          ],
+          "sources": {
+            "id": "semgrep",
+            "rule": "semgrep",
+            "owasp": "semgrep",
+            "cwe": "semgrep",
+            "references": "semgrep",
+            "severity": "semgrep",
+            "severity_reason": "semgrep",
+            "remediation_deadline": "semgrep",
+            "file": "semgrep",
+            "line": "semgrep",
+            "title": "semgrep",
+            "problem": "semgrep",
+            "solution": "semgrep",
+            "false_positive": "semgrep",
+            "status": "semgrep",
+            "code": "semgrep",
+            "code_context": "semgrep"
+          },
+          "tools": [
+            "semgrep"
+          ],
+          "remediation": {
+            "status": "open",
+            "diff": null,
+            "touched_files": [
+              "testcode/BenchmarkTest00017.py"
+            ],
+            "method": null,
+            "explanation": null,
+            "verification": null
+          },
+          "triage": {
+            "verdict": "verdadero",
+            "confidence": 1.0,
+            "reason": "Detección directa por regla del escáner estático.",
+            "decided_by": "regla",
+            "model": "static-rules",
+            "timestamp": "2026-10-24T16:04:52.210391+00:00"
+          },
+          "matched": false,
+          "match_score": 0.0,
+          "gt_cwe": null,
+          "gt_line": null,
+          "gt_rule": null
+        }
+      ]
+    }
+  ],
+  "cwe_categories": [
+    {
+      "cwe": "CWE-1004",
+      "name": "Categoría de Vulnerabilidad CWE-1004",
+      "category": "General",
+      "total_gt": 0,
+      "detected": 24,
+      "tp": 0,
+      "fp": 24,
+      "fn": 0,
+      "recall": 1.0,
+      "tpr": 1.0,
+      "fpr": 1.0,
+      "precision": 0.0,
+      "f1_score": 0.0,
+      "comparison": {
+        "has_previous": true,
+        "delta_recall_pts": 100.0,
+        "delta_tpr_pts": 100.0,
+        "delta_fpr_pts": 100.0,
+        "delta_precision_pts": 0.0,
+        "delta_f1_pts": 0.0
+      },
+      "delta_recall_pts": 100.0,
+      "delta_fpr_pts": 100.0
+    },
+    {
+      "cwe": "CWE-1104",
+      "name": "Categoría de Vulnerabilidad CWE-1104",
+      "category": "General",
+      "total_gt": 0,
+      "detected": 1,
+      "tp": 0,
+      "fp": 1,
+      "fn": 0,
+      "recall": 1.0,
+      "tpr": 1.0,
+      "fpr": 1.0,
+      "precision": 0.0,
+      "f1_score": 0.0,
+      "comparison": {
+        "has_previous": true,
+        "delta_recall_pts": 0.0,
+        "delta_tpr_pts": 0.0,
+        "delta_fpr_pts": 100.0,
+        "delta_precision_pts": -100.0,
+        "delta_f1_pts": -100.0
+      },
+      "delta_recall_pts": 0.0,
+      "delta_fpr_pts": 100.0
+    },
+    {
+      "cwe": "CWE-22",
+      "name": "Path Traversal",
+      "category": "Broken Access Control",
+      "total_gt": 65,
+      "detected": 261,
+      "tp": 2,
+      "fp": 259,
+      "fn": 63,
+      "recall": 0.031,
+      "tpr": 0.031,
+      "fpr": 0.992,
+      "precision": 0.008,
+      "f1_score": 0.013,
+      "comparison": {
+        "has_previous": false,
+        "delta_recall_pts": 0.0,
+        "delta_tpr_pts": 0.0,
+        "delta_fpr_pts": 0.0,
+        "delta_precision_pts": 0.0,
+        "delta_f1_pts": 0.0
+      },
+      "delta_recall_pts": 0.0,
+      "delta_fpr_pts": 0.0
+    },
+    {
+      "cwe": "CWE-327",
+      "name": "Broken Cryptographic Algorithm",
+      "category": "Cryptography",
+      "total_gt": 0,
+      "detected": 54,
+      "tp": 0,
+      "fp": 54,
+      "fn": 0,
+      "recall": 1.0,
+      "tpr": 1.0,
+      "fpr": 1.0,
+      "precision": 0.0,
+      "f1_score": 0.0,
+      "comparison": {
+        "has_previous": false,
+        "delta_recall_pts": 0.0,
+        "delta_tpr_pts": 0.0,
+        "delta_fpr_pts": 0.0,
+        "delta_precision_pts": 0.0,
+        "delta_f1_pts": 0.0
+      },
+      "delta_recall_pts": 0.0,
+      "delta_fpr_pts": 0.0
+    },
+    {
+      "cwe": "CWE-328",
+      "name": "Categoría de Vulnerabilidad CWE-328",
+      "category": "General",
+      "total_gt": 71,
+      "detected": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 71,
+      "recall": 0.0,
+      "tpr": 0.0,
+      "fpr": 0.0,
+      "precision": 0.0,
+      "f1_score": 0.0,
+      "comparison": {
+        "has_previous": false,
+        "delta_recall_pts": 0.0,
+        "delta_tpr_pts": 0.0,
+        "delta_fpr_pts": 0.0,
+        "delta_precision_pts": 0.0,
+        "delta_f1_pts": 0.0
+      },
+      "delta_recall_pts": 0.0,
+      "delta_fpr_pts": 0.0
+    },
+    {
+      "cwe": "CWE-330",
+      "name": "Categoría de Vulnerabilidad CWE-330",
+      "category": "General",
+      "total_gt": 99,
+      "detected": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 99,
+      "recall": 0.0,
+      "tpr": 0.0,
+      "fpr": 0.0,
+      "precision": 0.0,
+      "f1_score": 0.0,
+      "comparison": {
+        "has_previous": false,
+        "delta_recall_pts": 0.0,
+        "delta_tpr_pts": 0.0,
+        "delta_fpr_pts": 0.0,
+        "delta_precision_pts": 0.0,
+        "delta_f1_pts": 0.0
+      },
+      "delta_recall_pts": 0.0,
+      "delta_fpr_pts": 0.0
+    },
+    {
+      "cwe": "CWE-501",
+      "name": "Categoría de Vulnerabilidad CWE-501",
+      "category": "General",
+      "total_gt": 18,
+      "detected": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 18,
+      "recall": 0.0,
+      "tpr": 0.0,
+      "fpr": 0.0,
+      "precision": 0.0,
+      "f1_score": 0.0,
+      "comparison": {
+        "has_previous": false,
+        "delta_recall_pts": 0.0,
+        "delta_tpr_pts": 0.0,
+        "delta_fpr_pts": 0.0,
+        "delta_precision_pts": 0.0,
+        "delta_f1_pts": 0.0
+      },
+      "delta_recall_pts": 0.0,
+      "delta_fpr_pts": 0.0
+    },
+    {
+      "cwe": "CWE-502",
+      "name": "Deserialization of Untrusted Data",
+      "category": "Integrity Failures",
+      "total_gt": 18,
+      "detected": 30,
+      "tp": 18,
+      "fp": 12,
+      "fn": 0,
+      "recall": 1.0,
+      "tpr": 1.0,
+      "fpr": 0.4,
+      "precision": 0.6,
+      "f1_score": 0.75,
+      "comparison": {
+        "has_previous": false,
+        "delta_recall_pts": 0.0,
+        "delta_tpr_pts": 0.0,
+        "delta_fpr_pts": 0.0,
+        "delta_precision_pts": 0.0,
+        "delta_f1_pts": 0.0
+      },
+      "delta_recall_pts": 0.0,
+      "delta_fpr_pts": 0.0
+    },
+    {
+      "cwe": "CWE-601",
+      "name": "Categoría de Vulnerabilidad CWE-601",
+      "category": "General",
+      "total_gt": 13,
+      "detected": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 13,
+      "recall": 0.0,
+      "tpr": 0.0,
+      "fpr": 0.0,
+      "precision": 0.0,
+      "f1_score": 0.0,
+      "comparison": {
+        "has_previous": false,
+        "delta_recall_pts": 0.0,
+        "delta_tpr_pts": 0.0,
+        "delta_fpr_pts": 0.0,
+        "delta_precision_pts": 0.0,
+        "delta_f1_pts": 0.0
+      },
+      "delta_recall_pts": 0.0,
+      "delta_fpr_pts": 0.0
+    },
+    {
+      "cwe": "CWE-611",
+      "name": "Categoría de Vulnerabilidad CWE-611",
+      "category": "General",
+      "total_gt": 8,
+      "detected": 57,
+      "tp": 0,
+      "fp": 57,
+      "fn": 8,
+      "recall": 0.0,
+      "tpr": 0.0,
+      "fpr": 1.0,
+      "precision": 0.0,
+      "f1_score": 0.0,
+      "comparison": {
+        "has_previous": false,
+        "delta_recall_pts": 0.0,
+        "delta_tpr_pts": 0.0,
+        "delta_fpr_pts": 0.0,
+        "delta_precision_pts": 0.0,
+        "delta_f1_pts": 0.0
+      },
+      "delta_recall_pts": 0.0,
+      "delta_fpr_pts": 0.0
+    },
+    {
+      "cwe": "CWE-614",
+      "name": "Categoría de Vulnerabilidad CWE-614",
+      "category": "General",
+      "total_gt": 24,
+      "detected": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 24,
+      "recall": 0.0,
+      "tpr": 0.0,
+      "fpr": 0.0,
+      "precision": 0.0,
+      "f1_score": 0.0,
+      "comparison": {
+        "has_previous": false,
+        "delta_recall_pts": 0.0,
+        "delta_tpr_pts": 0.0,
+        "delta_fpr_pts": 0.0,
+        "delta_precision_pts": 0.0,
+        "delta_f1_pts": 0.0
+      },
+      "delta_recall_pts": 0.0,
+      "delta_fpr_pts": 0.0
+    },
+    {
+      "cwe": "CWE-643",
+      "name": "Categoría de Vulnerabilidad CWE-643",
+      "category": "General",
+      "total_gt": 51,
+      "detected": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 51,
+      "recall": 0.0,
+      "tpr": 0.0,
+      "fpr": 0.0,
+      "precision": 0.0,
+      "f1_score": 0.0,
+      "comparison": {
+        "has_previous": false,
+        "delta_recall_pts": 0.0,
+        "delta_tpr_pts": 0.0,
+        "delta_fpr_pts": 0.0,
+        "delta_precision_pts": 0.0,
+        "delta_f1_pts": 0.0
+      },
+      "delta_recall_pts": 0.0,
+      "delta_fpr_pts": 0.0
+    },
+    {
+      "cwe": "CWE-704",
+      "name": "Categoría de Vulnerabilidad CWE-704",
+      "category": "General",
+      "total_gt": 0,
+      "detected": 1,
+      "tp": 0,
+      "fp": 1,
+      "fn": 0,
+      "recall": 1.0,
+      "tpr": 1.0,
+      "fpr": 1.0,
+      "precision": 0.0,
+      "f1_score": 0.0,
+      "comparison": {
+        "has_previous": false,
+        "delta_recall_pts": 0.0,
+        "delta_tpr_pts": 0.0,
+        "delta_fpr_pts": 0.0,
+        "delta_precision_pts": 0.0,
+        "delta_f1_pts": 0.0
+      },
+      "delta_recall_pts": 0.0,
+      "delta_fpr_pts": 0.0
+    },
+    {
+      "cwe": "CWE-78",
+      "name": "OS Command Injection",
+      "category": "Injection",
+      "total_gt": 13,
+      "detected": 14,
+      "tp": 7,
+      "fp": 7,
+      "fn": 6,
+      "recall": 0.538,
+      "tpr": 0.538,
+      "fpr": 0.5,
+      "precision": 0.5,
+      "f1_score": 0.518,
+      "comparison": {
+        "has_previous": false,
+        "delta_recall_pts": 0.0,
+        "delta_tpr_pts": 0.0,
+        "delta_fpr_pts": 0.0,
+        "delta_precision_pts": 0.0,
+        "delta_f1_pts": 0.0
+      },
+      "delta_recall_pts": 0.0,
+      "delta_fpr_pts": 0.0
+    },
+    {
+      "cwe": "CWE-79",
+      "name": "Cross-site Scripting (XSS)",
+      "category": "Injection",
+      "total_gt": 31,
+      "detected": 16,
+      "tp": 0,
+      "fp": 16,
+      "fn": 31,
+      "recall": 0.0,
+      "tpr": 0.0,
+      "fpr": 1.0,
+      "precision": 0.0,
+      "f1_score": 0.0,
+      "comparison": {
+        "has_previous": false,
+        "delta_recall_pts": 0.0,
+        "delta_tpr_pts": 0.0,
+        "delta_fpr_pts": 0.0,
+        "delta_precision_pts": 0.0,
+        "delta_f1_pts": 0.0
+      },
+      "delta_recall_pts": 0.0,
+      "delta_fpr_pts": 0.0
+    },
+    {
+      "cwe": "CWE-89",
+      "name": "SQL Injection",
+      "category": "Injection",
+      "total_gt": 5,
+      "detected": 82,
+      "tp": 0,
+      "fp": 82,
+      "fn": 5,
+      "recall": 0.0,
+      "tpr": 0.0,
+      "fpr": 1.0,
+      "precision": 0.0,
+      "f1_score": 0.0,
+      "comparison": {
+        "has_previous": true,
+        "delta_recall_pts": -100.0,
+        "delta_tpr_pts": -100.0,
+        "delta_fpr_pts": 100.0,
+        "delta_precision_pts": -100.0,
+        "delta_f1_pts": -100.0
+      },
+      "delta_recall_pts": -100.0,
+      "delta_fpr_pts": 100.0
+    },
+    {
+      "cwe": "CWE-90",
+      "name": "Categoría de Vulnerabilidad CWE-90",
+      "category": "General",
+      "total_gt": 16,
+      "detected": 0,
+      "tp": 0,
+      "fp": 0,
+      "fn": 16,
+      "recall": 0.0,
+      "tpr": 0.0,
+      "fpr": 0.0,
+      "precision": 0.0,
+      "f1_score": 0.0,
+      "comparison": {
+        "has_previous": false,
+        "delta_recall_pts": 0.0,
+        "delta_tpr_pts": 0.0,
+        "delta_fpr_pts": 0.0,
+        "delta_precision_pts": 0.0,
+        "delta_f1_pts": 0.0
+      },
+      "delta_recall_pts": 0.0,
+      "delta_fpr_pts": 0.0
+    },
+    {
+      "cwe": "CWE-93",
+      "name": "Categoría de Vulnerabilidad CWE-93",
+      "category": "General",
+      "total_gt": 0,
+      "detected": 2,
+      "tp": 0,
+      "fp": 2,
+      "fn": 0,
+      "recall": 1.0,
+      "tpr": 1.0,
+      "fpr": 1.0,
+      "precision": 0.0,
+      "f1_score": 0.0,
+      "comparison": {
+        "has_previous": false,
+        "delta_recall_pts": 0.0,
+        "delta_tpr_pts": 0.0,
+        "delta_fpr_pts": 0.0,
+        "delta_precision_pts": 0.0,
+        "delta_f1_pts": 0.0
+      },
+      "delta_recall_pts": 0.0,
+      "delta_fpr_pts": 0.0
+    },
+    {
+      "cwe": "CWE-94",
+      "name": "Code Injection",
+      "category": "Injection",
+      "total_gt": 20,
+      "detected": 53,
+      "tp": 20,
+      "fp": 33,
+      "fn": 0,
+      "recall": 1.0,
+      "tpr": 1.0,
+      "fpr": 0.623,
+      "precision": 0.377,
+      "f1_score": 0.548,
+      "comparison": {
+        "has_previous": false,
+        "delta_recall_pts": 0.0,
+        "delta_tpr_pts": 0.0,
+        "delta_fpr_pts": 0.0,
+        "delta_precision_pts": 0.0,
+        "delta_f1_pts": 0.0
+      },
+      "delta_recall_pts": 0.0,
+      "delta_fpr_pts": 0.0
+    }
+  ],
+  "tool_evaluations": [
+    {
+      "tool": "semgrep",
+      "true_positives": 47,
+      "false_positives": 547,
+      "false_negatives": 405,
+      "total_detected": 594,
+      "total_ground_truth": 452,
+      "recall": 0.104,
+      "tpr": 0.104,
+      "precision": 0.079,
+      "fpr": 0.921
+    },
+    {
+      "tool": "dependabot",
+      "true_positives": 0,
+      "false_positives": 1,
+      "false_negatives": 452,
+      "total_detected": 1,
+      "total_ground_truth": 452,
+      "recall": 0.0,
+      "tpr": 0.0,
+      "precision": 0.0,
+      "fpr": 1.0
+    }
+  ],
+  "scanner_pairs": [
+    {
+      "tools": [
+        "dependabot",
+        "semgrep"
+      ],
+      "pair_label": "dependabot + semgrep",
+      "true_positives": 47,
+      "false_positives": 548,
+      "false_negatives": 405,
+      "total_detected": 595,
+      "total_ground_truth": 452,
+      "recall": 0.104,
+      "tpr": 0.104,
+      "precision": 0.079,
+      "fpr": 0.921
+    }
+  ],
+  "triage_benchmark": {
+    "raw_fpr_before": 0.921,
+    "models_evaluated": [
+      {
+        "model_name": "Gemini (gemini-3.5-flash-lite)",
+        "provider": "gemini",
+        "fpr_before": 0.921,
+        "fpr_after": 0.865,
+        "delta_fpr_pts": -5.6,
+        "false_positives_eliminated": 246,
+        "true_positives_retained": 47,
+        "uncertain_sent_to_human_review": 71,
+        "standardized_prompt": "TRIAGE_SYSTEM_PROMPT v1.0"
+      },
+      {
+        "model_name": "OpenAI (gpt-4o-mini)",
+        "provider": "openai",
+        "fpr_before": 0.921,
+        "fpr_after": 0.858,
+        "delta_fpr_pts": -6.3,
+        "false_positives_eliminated": 263,
+        "true_positives_retained": 47,
+        "uncertain_sent_to_human_review": 71,
+        "standardized_prompt": "TRIAGE_SYSTEM_PROMPT v1.0"
+      },
+      {
+        "model_name": "Claude (claude-3-5-sonnet)",
+        "provider": "claude",
+        "fpr_before": 0.921,
+        "fpr_after": 0.849,
+        "delta_fpr_pts": -7.2,
+        "false_positives_eliminated": 284,
+        "true_positives_retained": 47,
+        "uncertain_sent_to_human_review": 71,
+        "standardized_prompt": "TRIAGE_SYSTEM_PROMPT v1.0"
+      }
+    ]
+  }
+}

@@ -781,6 +781,47 @@ def execute_benchmark_task(
             # Commit evaluado de la referencia (None para copias locales sin .git).
             repo_commit = get_git_commit(repo_local_path)
 
+            # Corrida de humo sin ground truth por codigo (no inventa TPR/FPR).
+            if repo_format == "fpr-smoke":
+                try:
+                    smoke_result = analyzer.analyze_directory(
+                        str(repo_local_path),
+                        repo_url=ref.get("url", f"local://{repo_id}"),
+                        enable_ai=False,
+                    )
+                    smoke_findings = smoke_result.get("findings", [])
+                    smoke_error = None
+                except Exception as exc:
+                    smoke_findings = []
+                    smoke_error = str(exc)
+                repos_results.append({
+                    "id": repo_id,
+                    "name": repo_name,
+                    "type": ref.get("type", "general"),
+                    "format": "fpr-smoke",
+                    "description": ref.get("description", ""),
+                    "commit": repo_commit,
+                    "metrics": {
+                        "smoke": True,
+                        "total_detected": len(smoke_findings),
+                        **({"error": smoke_error} if smoke_error else {}),
+                        "note": ("Corrida de humo de FPR: el repositorio no publica "
+                                 "ground truth por código; no se calculan TPR/FPR."),
+                    },
+                    "comparison": {},
+                    "findings_detected": len(smoke_findings),
+                    "ground_truth_count": 0,
+                    "raw_ground_truth": [],
+                    "raw_detected": [],
+                    "sample_findings": [
+                        {"rule": f.get("rule"), "file": f.get("file"),
+                         "line": f.get("line"), "severity": f.get("severity"),
+                         "cwe": f.get("cwe")}
+                        for f in smoke_findings[:15]
+                    ],
+                })
+                continue
+
             # 2. Parse Ground Truth
             gt_items = parse_ground_truth(repo_local_path, repo_format)
 
@@ -826,19 +867,25 @@ def execute_benchmark_task(
                 "message": "Calculando métricas CWE y comparativas...",
             })
 
-        # Calculate overall averages
-        total_repos = len(repos_results)
-        tot_gt = sum(r["metrics"]["total_ground_truth"] for r in repos_results)
-        tot_det = sum(r["metrics"]["total_detected"] for r in repos_results)
-        tot_tp = sum(r["metrics"]["true_positives"] for r in repos_results)
-        tot_fp = sum(r["metrics"]["false_positives"] for r in repos_results)
-        tot_fn = sum(r["metrics"]["false_negatives"] for r in repos_results)
+        # Calculate overall averages (solo repos con métricas reales; los smoke no entran)
+        measured = [r for r in repos_results if not r["metrics"].get("smoke")]
+        if not measured and not repos_results:
+            raise RuntimeError("Ningún repositorio de referencia produjo métricas medibles.")
+        total_repos = max(1, len(measured))
+        tot_gt = sum(r["metrics"]["total_ground_truth"] for r in measured)
+        tot_det = sum(r["metrics"]["total_detected"] for r in measured)
+        tot_tp = sum(r["metrics"]["true_positives"] for r in measured)
+        tot_fp = sum(r["metrics"]["false_positives"] for r in measured)
+        tot_fn = sum(r["metrics"]["false_negatives"] for r in measured)
 
-        avg_recall = round(sum(r["metrics"]["recall"] for r in repos_results) / total_repos, 3)
-        avg_tpr = avg_recall
-        avg_fpr = round(sum(r["metrics"]["fpr"] for r in repos_results) / total_repos, 3)
-        avg_prec = round(sum(r["metrics"]["precision"] for r in repos_results) / total_repos, 3)
-        avg_f1 = round(sum(r["metrics"]["f1_score"] for r in repos_results) / total_repos, 3)
+        if measured:
+            avg_recall = round(sum(r["metrics"]["recall"] for r in measured) / total_repos, 3)
+            avg_tpr = avg_recall
+            avg_fpr = round(sum(r["metrics"]["fpr"] for r in measured) / total_repos, 3)
+            avg_prec = round(sum(r["metrics"]["precision"] for r in measured) / total_repos, 3)
+            avg_f1 = round(sum(r["metrics"]["f1_score"] for r in measured) / total_repos, 3)
+        else:
+            avg_recall = avg_tpr = avg_fpr = avg_prec = avg_f1 = 0.0
 
         summary = {
             "total_repos": total_repos,

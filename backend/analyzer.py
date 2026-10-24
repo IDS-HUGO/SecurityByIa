@@ -613,6 +613,97 @@ def _markdown(findings: List[Dict[str, Any]], url: str) -> str:
     return "\n".join(lines)
 
 
+def _run_semgrep_stage(
+    semgrep_bin: str,
+    local_configs: List[Any],
+    extended_configs: List[Any],
+    target_dir: str,
+    timeout_budget: Optional[int],
+    progress: Callable[[str, int, str], None],
+) -> Tuple[Dict[str, Any], str]:
+    """Ejecuta Semgrep con fallback a reglas locales y status 'degraded'."""
+    json_args = ["--json", "--quiet", target_dir]
+
+    def _run(cmd: List[str], budget: Optional[int]) -> subprocess.CompletedProcess:
+        try:
+            return subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=_clamp_timeout(600, budget),
+                check=False,
+            )
+        except FileNotFoundError as exc:
+            raise RuntimeError("Semgrep is not installed or is not available on PATH.") from exc
+        except subprocess.TimeoutExpired as exc:
+            raise RuntimeError("Semgrep analysis timed out.") from exc
+
+    def _parse(proc: subprocess.CompletedProcess) -> Tuple[Dict[str, Any], bool]:
+        try:
+            parsed = json.loads(proc.stdout or "{}")
+            return (parsed if isinstance(parsed, dict) else {}), True
+        except json.JSONDecodeError:
+            return {}, False
+
+    def _fatal_errors(data: Dict[str, Any]) -> List[Dict[str, Any]]:
+        fatal = []
+        for e in (data.get("errors") or []):
+            t_str = str(e.get("type", ""))
+            msg = str(e.get("message", ""))
+            has_target_path = bool(e.get("path") or e.get("spans"))
+            is_target_parse_issue = (
+                has_target_path
+                and (
+                    any(p in t_str for p in ("ParseError", "Syntax error", "Lexical error", "PartialParsing"))
+                    or any(p in msg for p in ("Syntax error", "Lexical error", "cannot parse"))
+                    or e.get("level") == "warn"
+                )
+            )
+            if not is_target_parse_issue:
+                fatal.append(e)
+        return fatal
+
+    def _succeeded(proc: subprocess.CompletedProcess, data: Dict[str, Any], valid: bool) -> bool:
+        return proc.returncode in (0, 1) and valid and not _fatal_errors(data)
+
+    def _failure_detail(proc: subprocess.CompletedProcess) -> str:
+        text = (proc.stderr or "").strip()
+        return text.splitlines()[-1] if text else f"exit code {proc.returncode}"
+
+    full_cmd = [semgrep_bin]
+    for config in list(local_configs) + list(extended_configs):
+        full_cmd.extend(["--config", str(config)])
+    full_cmd.extend(json_args)
+
+    started = time.monotonic()
+    progress("analyzing", 35, "Running Semgrep rules")
+    proc = _run(full_cmd, timeout_budget)
+    data, valid = _parse(proc)
+    if _succeeded(proc, data, valid):
+        return data, "completed"
+
+    progress("analyzing", 36,
+             "Semgrep extended ruleset failed; retrying with local rules only")
+    remaining: Optional[int] = None
+    if timeout_budget:
+        remaining = max(30, timeout_budget - int(time.monotonic() - started))
+    core_cmd = [semgrep_bin]
+    for config in local_configs:
+        core_cmd.extend(["--config", str(config)])
+    core_cmd.extend(json_args)
+    proc = _run(core_cmd, remaining)
+    data, valid = _parse(proc)
+    if _succeeded(proc, data, valid):
+        return data, "degraded"
+
+    raise RuntimeError(
+        "Semgrep falló también con las reglas locales "
+        f"({_failure_detail(proc)}): el análisis se aborta para no reportar "
+        "un repositorio limpio sin haber escaneado.")
+
+
 def analyze_directory(
     target_dir: str,
     progress_callback: Optional[ProgressCallback] = None,
@@ -628,6 +719,7 @@ def analyze_directory(
     .git directory). timeout_budget (seconds) clamps each stage so clone + scan
     respects a total time limit. enable_ai_triage runs bounded AI triage on findings.
     """
+    target_dir = str(Path(target_dir).resolve())
 
     def progress(stage: str, percentage: int, message: str) -> None:
         if progress_callback:
@@ -636,40 +728,28 @@ def analyze_directory(
     semgrep_bin = _find_semgrep_bin()
     rules_file = Path(__file__).resolve().parent / "rules" / "security-rules.yml"
 
-    semgrep_cmd = [semgrep_bin]
+    # Reglas locales (siempre): security-rules.yml + reglas por control (F10)
+    local_configs: List[Path] = []
     if rules_file.exists():
-        semgrep_cmd.extend(["--config", str(rules_file)])
-
-    # Reglas propias de Semgrep por control (F10)
+        local_configs.append(rules_file)
     semgrep_rules_dir = Path(__file__).resolve().parent / "rules" / "semgrep"
     if not semgrep_rules_dir.exists():
         semgrep_rules_dir = Path(__file__).resolve().parent.parent / "rules" / "semgrep"
     if semgrep_rules_dir.exists():
-        for r_file in sorted(semgrep_rules_dir.rglob("rule*.yml")):
-            semgrep_cmd.extend(["--config", str(r_file)])
+        local_configs.extend(sorted(semgrep_rules_dir.rglob("rule*.yml")))
 
-    semgrep_cmd.extend(["--config=p/owasp-top-ten", "--json", "--quiet", target_dir])
+    # Ruleset extendido: copia versionada de OWASP Top 10 (reproducible sin red);
+    # si no existe, cae al registro (requiere red).
+    extended_configs: List[Any] = []
+    vendor_file = Path(__file__).resolve().parent / "rules" / "vendor" / "owasp-top-ten.json"
+    if vendor_file.exists():
+        extended_configs.append(vendor_file)
+    else:
+        extended_configs.append("p/owasp-top-ten")
 
-    progress("analyzing", 35, "Running Semgrep rules")
-    try:
-        result = subprocess.run(
-            semgrep_cmd,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            timeout=_clamp_timeout(600, timeout_budget),
-            check=False,
-        )
-    except FileNotFoundError as exc:
-        raise RuntimeError("Semgrep is not installed or is not available on PATH.") from exc
-    except subprocess.TimeoutExpired as exc:
-        raise RuntimeError("Semgrep analysis timed out.") from exc
-
-    try:
-        data = json.loads(result.stdout or "{}")
-    except json.JSONDecodeError as exc:
-        raise RuntimeError("Semgrep returned invalid JSON.") from exc
+    semgrep_data, semgrep_status = _run_semgrep_stage(
+        semgrep_bin, local_configs, extended_configs, target_dir, timeout_budget, progress)
+    data = semgrep_data
 
     progress("analyzing_secrets", 60, "Scanning for exposed secrets")
     secret_findings, gitleaks_status = _run_gitleaks(
@@ -770,6 +850,15 @@ def analyze_directory(
     summary = {level: sum(item["severity"] == level for item in findings)
                for level in ("critical", "high", "medium", "low")}
 
+    # Modo degradado visible (P0-1): aviso en el resultado, la interfaz y el reporte.
+    warnings: List[str] = []
+    if semgrep_status == "degraded":
+        warnings.append(
+            "Semgrep corrió en modo degradado: el ruleset extendido (OWASP Top 10) falló "
+            "y el escaneo se completó solo con las reglas locales. El resultado puede "
+            "subestimar el riesgo; reintentá con red disponible."
+        )
+
     return {
         "status": "completed",
         "stage": "completed",
@@ -779,9 +868,10 @@ def analyze_directory(
         "summary": {"total": len(findings), **summary},
         "findings": findings,
         "controls_review": controls_review,
+        **({"warnings": warnings} if warnings else {}),
         "markdown_report": _markdown(findings, url),
         "analysis": {
-            "tools": {"semgrep": "completed", "gitleaks": gitleaks_status,
+            "tools": {"semgrep": semgrep_status, "gitleaks": gitleaks_status,
                       **(tool_report.get("tools") or {})},
             "stack": tool_report.get("stack") or {},
             "sbom": tool_report.get("sbom"),

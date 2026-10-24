@@ -45,6 +45,31 @@ repositories:
     format: "vuln-markers"
     description: "Servicio API (CWE-798 API Key, CWE-327 Weak Hash MD5, CWE-89 SQLi, CWE-94 Code Injection Eval)"
 
+  # --- Repos reales (commits fijados: corridas reproducibles) ---
+
+  # OWASP Benchmark for Python real: 1230 casos en expectedresults-0.1.csv
+  # (formato original "# test name, category, real vulnerability, cwe").
+  # REPO RESERVADO (holdout): no se usa para escribir ni ajustar reglas —
+  # las reglas se redactan solo desde el inventario v1.0 y los ejemplos propios.
+  - id: "repo-owasp-benchmark-python"
+    url: "https://github.com/OWASP-Benchmark/BenchmarkPython"
+    commit: "f1291485808b66e20ddb6b01b10dc71b3df8c8ba"
+    name: "OWASP Benchmark for Python"
+    type: "synthetic"
+    format: "csv-expected-results"
+    description: "Benchmark OWASP Python real (1230 casos: inyección SQL, path traversal, comandos, LDAP, XPATH, XSS, cripto débil; casos T y F) en testcode/"
+
+  # Juice Shop real. El repo NO publica ground truth por código (su challenges.yml
+  # no mapea archivo+línea), así que corre como humo de FPR: hallazgos reales sin
+  # inventar TPR. La medición de TPR/FPR por categoría viene del BenchmarkPython real.
+  - id: "repo-juice-shop-real"
+    url: "https://github.com/juice-shop/juice-shop"
+    commit: "717f5efa886b0417eeecb52378b03cf10567b7e2"
+    name: "OWASP Juice Shop"
+    type: "owasp"
+    format: "fpr-smoke"
+    description: "OWASP Juice Shop real (Node/TS) como corrida de humo: volumen y ruido de hallazgos sobre una app intencionalmente vulnerable"
+
   - id: "repo-controles-violaciones"
     url: "bench/examples/controls-bench"
     name: "Controles Inventario v1.0 (violaciones inyectadas)"

@@ -1,0 +1,12 @@
+{
+  "source_url": "https://semgrep.dev/c/p/owasp-top-ten",
+  "fetched_at": "2026-10-24T15:42:06.366525+00:00",
+  "semgrep_version": "1.182.1",
+  "ruleset_sha256": "fe39d95e60e7023ab8ad85f5e80bad26ecb2688d9bdb16b43254651e24bb1492",
+  "rule_count": 560,
+  "source_repository": "https://github.com/semgrep/semgrep-rules",
+  "source_repository_commit": "16b9e6d45f10649f6a531ec4838ed9924372c3bc",
+  "license": "Semgrep Rules License v1.0",
+  "license_url": "https://semgrep.dev/legal/rules-license",
+  "note": "Copia versionada del ruleset del registro para reproducibilidad sin red. La redistribucion se rige por la licencia citada; este archivo conserva la atribucion y no modifica las reglas."
+}

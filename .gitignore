@@ -24,10 +24,14 @@ reporte_seguridad.md
 /tmp/bench-repos-run/
 bench/cloned/
 bench/downloads/
-bench/results/
+bench/results/*
+!bench/results/baseline.json
+!bench/results/benchmark-results.json
 backend/bench/cloned/
 backend/bench/downloads/
-backend/bench/results/
+backend/bench/results/*
+!backend/bench/results/baseline.json
+!backend/bench/results/benchmark-results.json
 
 # --- Node / Frontend tooling ---
 node_modules/
