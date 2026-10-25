@@ -1,12 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/client';
 
+const STATUS_LABELS = {
+  ok: { text: 'Proxy operativo', color: '#10b981' },
+  down: { text: 'Proxy caído (fail-closed)', color: '#ef4444' },
+  unconfigured: { text: 'Proxy no configurado (clave directa)', color: '#f59e0b' },
+};
+
+function proxyResultLabel(entry) {
+  const result = String(entry.result || '');
+  if (result === 'allowed') return 'Permitida';
+  if (result.startsWith('denied:')) {
+    const reason = result.slice('denied:'.length).replace(/-/g, ' ');
+    return `Denegada (${reason})`;
+  }
+  return result || '—';
+}
+
 export default function CredentialsTab() {
-  const [activeSubTab, setActiveSubTab] = useState('sites'); // 'sites', 'approvals', 'sessions', 'audit'
+  const [activeSubTab, setActiveSubTab] = useState('sites'); // 'sites', 'proxy', 'approvals', 'sessions', 'audit'
   const [sites, setSites] = useState([]);
   const [approvals, setApprovals] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [audit, setAudit] = useState([]);
+  const [proxyStatus, setProxyStatus] = useState(null);
+  const [proxyAudit, setProxyAudit] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [successMsg, setSuccessMsg] = useState(null);
@@ -35,18 +53,22 @@ export default function CredentialsTab() {
     setLoading(true);
     setError(null);
     try {
-      const [sitesRes, approvalsRes, sessionsRes, auditRes] = await Promise.all([
+      const [sitesRes, approvalsRes, sessionsRes, auditRes, proxyStatusRes, proxyAuditRes] = await Promise.all([
         api.listCredentialSites().catch(() => ({ sites: [] })),
         api.listCredentialApprovals().catch(() => ({ approvals: [] })),
         api.listCredentialSessions().catch(() => ({ sessions: [] })),
         api.getCredentialAudit(50).catch(() => ({ audit: [] })),
+        api.getProxyStatus().catch(() => null),
+        api.getProxyAudit(50).catch(() => []),
       ]);
       setSites(sitesRes.sites || []);
       setApprovals(approvalsRes.approvals || []);
       setSessions(sessionsRes.sessions || []);
       setAudit(auditRes.audit || []);
+      setProxyStatus(proxyStatusRes);
+      setProxyAudit(Array.isArray(proxyAuditRes) ? proxyAuditRes : []);
     } catch (err) {
-      setError('Error al sincronizar datos del Credential Broker: ' + err.message);
+      setError('Error al sincronizar datos del módulo de seguridad y credenciales: ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -119,20 +141,21 @@ export default function CredentialsTab() {
   };
 
   const pendingApprovals = approvals.filter((a) => a.status === 'pending');
+  const proxyStatusInfo = STATUS_LABELS[proxyStatus?.status] || STATUS_LABELS.unconfigured;
 
   return (
-    <div className="tab-pane credentials-tab">
+    <div className="tab-pane active credentials-tab">
       {/* Encabezado y resumen de seguridad */}
       <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.25rem' }}>
-            <h2 style={{ margin: 0 }}>Acceso Web Delegado y Credenciales (F12)</h2>
+            <h2 style={{ margin: 0 }}>Acceso Web Delegado & Proxy Seguro</h2>
             <span className="badge" style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.3)', padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600 }}>
               🔒 Zero LLM Exposure
             </span>
           </div>
           <p className="section-desc" style={{ maxWidth: '850px', margin: 0 }}>
-            Permite que agentes de IA auditen y naveguen aplicaciones con cuentas privadas sin conocer jamás contraseñas, semillas TOTP ni tokens en su contexto. Toda credencial se custodia en bóveda protegida (0600) y se inyecta por el worker de confianza.
+            Permite que agentes de IA auditen aplicaciones web e invoquen APIs upstream mediante proxy seguro sin conocer jamás contraseñas, semillas TOTP ni tokens en su contexto. Toda credencial se custodia en bóveda protegida (0600) y el tráfico es auditado en tiempo real.
           </p>
         </div>
 
@@ -160,12 +183,23 @@ export default function CredentialsTab() {
         </div>
       )}
 
-      {/* KPIs Rápidos */}
-      <div className="kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', margin: '1.5rem 0' }}>
+      {/* KPIs Rápidos Compartidos */}
+      <div className="kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', margin: '1.5rem 0' }}>
         <div className="kpi-card" style={{ padding: '1.25rem', background: 'var(--card-bg, #1e293b)', borderRadius: '8px', border: '1px solid var(--border-color, #334155)' }}>
           <div style={{ color: 'var(--text-muted, #94a3b8)', fontSize: '0.85rem' }}>Sitios en Bóveda</div>
           <div style={{ fontSize: '1.8rem', fontWeight: 700, marginTop: '0.25rem' }}>{sites.length}</div>
           <div style={{ fontSize: '0.75rem', color: '#22c55e', marginTop: '0.25rem' }}>Cifrados con permisos 0600</div>
+        </div>
+
+        <div className="kpi-card" style={{ padding: '1.25rem', background: 'var(--card-bg, #1e293b)', borderRadius: '8px', border: '1px solid var(--border-color, #334155)' }}>
+          <div style={{ color: 'var(--text-muted, #94a3b8)', fontSize: '0.85rem' }}>Estado del Proxy</div>
+          <div style={{ fontSize: '1.2rem', fontWeight: 700, marginTop: '0.5rem', color: proxyStatusInfo.color, display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ width: 10, height: 10, borderRadius: '50%', background: proxyStatusInfo.color, display: 'inline-block' }}></span>
+            {proxyStatusInfo.text}
+          </div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted, #94a3b8)', marginTop: '0.25rem' }}>
+            {proxyStatus?.providers?.length ? `${proxyStatus.providers.length} proveedores en whitelist` : 'Inyección de tokens'}
+          </div>
         </div>
 
         <div className="kpi-card" style={{ padding: '1.25rem', background: pendingApprovals.length > 0 ? 'rgba(234, 179, 8, 0.08)' : 'var(--card-bg, #1e293b)', borderRadius: '8px', border: pendingApprovals.length > 0 ? '1px solid rgba(234, 179, 8, 0.4)' : '1px solid var(--border-color, #334155)' }}>
@@ -188,24 +222,31 @@ export default function CredentialsTab() {
 
         <div className="kpi-card" style={{ padding: '1.25rem', background: 'var(--card-bg, #1e293b)', borderRadius: '8px', border: '1px solid var(--border-color, #334155)' }}>
           <div style={{ color: 'var(--text-muted, #94a3b8)', fontSize: '0.85rem' }}>Eventos Auditados</div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 700, marginTop: '0.25rem' }}>{audit.length}</div>
+          <div style={{ fontSize: '1.8rem', fontWeight: 700, marginTop: '0.25rem' }}>{audit.length + proxyAudit.length}</div>
           <div style={{ fontSize: '0.75rem', color: '#a855f7', marginTop: '0.25rem' }}>Bitácora inmutable sin secretos</div>
         </div>
       </div>
 
-      {/* Subnavegación */}
-      <div className="tab-nav" style={{ display: 'flex', gap: '0.5rem', borderBottom: '1px solid var(--border-color, #334155)', marginBottom: '1.5rem' }}>
+      {/* Subnavegación Compartida */}
+      <div className="tab-nav" style={{ display: 'flex', gap: '0.5rem', borderBottom: '1px solid var(--border-color, #334155)', marginBottom: '1.5rem', overflowX: 'auto' }}>
         <button
           className={`tab-btn ${activeSubTab === 'sites' ? 'active' : ''}`}
           onClick={() => setActiveSubTab('sites')}
-          style={{ padding: '0.75rem 1.25rem', background: 'none', border: 'none', borderBottom: activeSubTab === 'sites' ? '2px solid #38bdf8' : '2px solid transparent', color: activeSubTab === 'sites' ? '#38bdf8' : 'var(--text-muted, #94a3b8)', fontWeight: 600, cursor: 'pointer' }}
+          style={{ padding: '0.75rem 1.25rem', background: 'none', border: 'none', borderBottom: activeSubTab === 'sites' ? '2px solid var(--accent, #38bdf8)' : '2px solid transparent', color: activeSubTab === 'sites' ? 'var(--accent, #38bdf8)' : 'var(--text-muted, #94a3b8)', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}
         >
-          Sitios y Bóveda ({sites.length})
+          Bóveda de Credenciales ({sites.length})
+        </button>
+        <button
+          className={`tab-btn ${activeSubTab === 'proxy' ? 'active' : ''}`}
+          onClick={() => setActiveSubTab('proxy')}
+          style={{ padding: '0.75rem 1.25rem', background: 'none', border: 'none', borderBottom: activeSubTab === 'proxy' ? '2px solid var(--accent, #38bdf8)' : '2px solid transparent', color: activeSubTab === 'proxy' ? 'var(--accent, #38bdf8)' : 'var(--text-muted, #94a3b8)', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}
+        >
+          Proxy de Secretos & APIs
         </button>
         <button
           className={`tab-btn ${activeSubTab === 'approvals' ? 'active' : ''}`}
           onClick={() => setActiveSubTab('approvals')}
-          style={{ padding: '0.75rem 1.25rem', background: 'none', border: 'none', borderBottom: activeSubTab === 'approvals' ? '2px solid #38bdf8' : '2px solid transparent', color: activeSubTab === 'approvals' ? '#38bdf8' : 'var(--text-muted, #94a3b8)', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+          style={{ padding: '0.75rem 1.25rem', background: 'none', border: 'none', borderBottom: activeSubTab === 'approvals' ? '2px solid var(--accent, #38bdf8)' : '2px solid transparent', color: activeSubTab === 'approvals' ? 'var(--accent, #38bdf8)' : 'var(--text-muted, #94a3b8)', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', whiteSpace: 'nowrap' }}
         >
           Bandeja de Aprobación
           {pendingApprovals.length > 0 && (
@@ -217,16 +258,16 @@ export default function CredentialsTab() {
         <button
           className={`tab-btn ${activeSubTab === 'sessions' ? 'active' : ''}`}
           onClick={() => setActiveSubTab('sessions')}
-          style={{ padding: '0.75rem 1.25rem', background: 'none', border: 'none', borderBottom: activeSubTab === 'sessions' ? '2px solid #38bdf8' : '2px solid transparent', color: activeSubTab === 'sessions' ? '#38bdf8' : 'var(--text-muted, #94a3b8)', fontWeight: 600, cursor: 'pointer' }}
+          style={{ padding: '0.75rem 1.25rem', background: 'none', border: 'none', borderBottom: activeSubTab === 'sessions' ? '2px solid var(--accent, #38bdf8)' : '2px solid transparent', color: activeSubTab === 'sessions' ? 'var(--accent, #38bdf8)' : 'var(--text-muted, #94a3b8)', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}
         >
           Sesiones Concedidas ({sessions.length})
         </button>
         <button
           className={`tab-btn ${activeSubTab === 'audit' ? 'active' : ''}`}
           onClick={() => setActiveSubTab('audit')}
-          style={{ padding: '0.75rem 1.25rem', background: 'none', border: 'none', borderBottom: activeSubTab === 'audit' ? '2px solid #38bdf8' : '2px solid transparent', color: activeSubTab === 'audit' ? '#38bdf8' : 'var(--text-muted, #94a3b8)', fontWeight: 600, cursor: 'pointer' }}
+          style={{ padding: '0.75rem 1.25rem', background: 'none', border: 'none', borderBottom: activeSubTab === 'audit' ? '2px solid var(--accent, #38bdf8)' : '2px solid transparent', color: activeSubTab === 'audit' ? 'var(--accent, #38bdf8)' : 'var(--text-muted, #94a3b8)', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}
         >
-          Auditoría de Acceso
+          Auditoría de Tráfico & Acceso
         </button>
       </div>
 
@@ -290,6 +331,109 @@ export default function CredentialsTab() {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* VISTA: PROXY DE SECRETOS */}
+      {activeSubTab === 'proxy' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12,
+            padding: '16px 20px', borderRadius: 8,
+            border: `1px solid ${proxyStatusInfo.color}55`,
+            background: `${proxyStatusInfo.color}14`,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{
+                width: 12, height: 12, borderRadius: '50%',
+                background: proxyStatusInfo.color, display: 'inline-block',
+              }} />
+              <div>
+                <strong style={{ color: proxyStatusInfo.color, fontSize: '1rem' }}>{proxyStatusInfo.text}</strong>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                  Aislamiento estricto fail-closed ante caídas y prevención de exfiltración de tokens
+                </div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button className="btn btn-sm btn-outline" onClick={loadData}>
+                Refrescar Proxy
+              </button>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+            <div className="card" style={{ padding: '1.25rem' }}>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Proveedores en Whitelist</div>
+              {proxyStatus?.providers?.length > 0 ? (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  {proxyStatus.providers.map(p => (
+                    <span key={p} className="badge" style={{ background: 'var(--accent-soft)', color: 'var(--accent)', border: '1px solid var(--accent-border)', padding: '0.2rem 0.6rem' }}>
+                      {p}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Sin proveedores específicos (Modo directo)</span>
+              )}
+            </div>
+
+            <div className="card" style={{ padding: '1.25rem' }}>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Inyección de Credenciales</div>
+              <div style={{ fontSize: '1rem', fontWeight: 600, color: proxyStatus?.token_configured ? '#22c55e' : '#f59e0b' }}>
+                {proxyStatus?.token_configured ? '✓ Token de servicio activo' : '⚠️ Token demo no configurado'}
+              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                Inyección en cabeceras HTTP sin conocimiento del modelo
+              </div>
+            </div>
+          </div>
+
+          <div className="card" style={{ padding: '1.25rem' }}>
+            <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.05rem' }}>Últimas Solicitudes Interceptadas por el Proxy</h3>
+            {proxyAudit.length === 0 ? (
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: 0 }}>
+                Sin llamadas registradas todavía. Las peticiones de agentes pasarán por aquí y se auditarán automáticamente.
+              </p>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid var(--border-medium)', color: 'var(--text-muted)' }}>
+                      <th style={{ padding: '0.6rem' }}>Fecha (UTC)</th>
+                      <th style={{ padding: '0.6rem' }}>Servicio</th>
+                      <th style={{ padding: '0.6rem' }}>Ruta Solicitada</th>
+                      <th style={{ padding: '0.6rem' }}>Resultado</th>
+                      <th style={{ padding: '0.6rem' }}>Token</th>
+                      <th style={{ padding: '0.6rem', textAlign: 'right' }}>HTTP</th>
+                      <th style={{ padding: '0.6rem', textAlign: 'right' }}>Latencia</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {proxyAudit.slice(0, 15).map((entry, idx) => (
+                      <tr key={`${entry.timestamp}-${idx}`} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                        <td style={{ padding: '0.6rem', fontFamily: 'var(--font-mono)', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                          {String(entry.timestamp || '').replace('T', ' ').slice(0, 19)}
+                        </td>
+                        <td style={{ padding: '0.6rem', fontWeight: 600 }}>{entry.service || '—'}</td>
+                        <td style={{ padding: '0.6rem', fontFamily: 'var(--font-mono)', fontSize: '0.8rem' }}>{entry.route || '—'}</td>
+                        <td style={{ padding: '0.6rem' }}>
+                          <span style={{ color: entry.result === 'allowed' ? '#22c55e' : '#ef4444', fontWeight: 600 }}>
+                            {proxyResultLabel(entry)}
+                          </span>
+                        </td>
+                        <td style={{ padding: '0.6rem', fontFamily: 'var(--font-mono)', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                          {entry.token_id || '—'}
+                        </td>
+                        <td style={{ padding: '0.6rem', textAlign: 'right' }}>{entry.status_code ?? '—'}</td>
+                        <td style={{ padding: '0.6rem', textAlign: 'right' }}>{entry.duration_ms ?? '—'} ms</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
       )}
 

@@ -87,7 +87,7 @@ export default function OverviewTab({ currentAnalysis, recentAnalyses, onLoadAna
         <section className="card" style={{ marginTop: '20px', padding: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '0.5rem' }}>
             <div>
-              <p className="eyebrow" style={{ margin: 0 }}>PRINCIPIO DE COBERTURA DECLARADA (F14)</p>
+              <p className="eyebrow" style={{ margin: 0 }}>PRINCIPIO DE COBERTURA DECLARADA</p>
               <h3 style={{ margin: '4px 0 0', fontSize: '16px' }}>Cobertura Políglota del Análisis</h3>
             </div>
             <span

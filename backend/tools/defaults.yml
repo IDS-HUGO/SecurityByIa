@@ -1,6 +1,6 @@
 version: '1.0'
 generated_from_benchmark: true
-timestamp: 1792903519.8674355
+timestamp: 1792905310.6591225
 defaults:
   sast:
     recomendada:

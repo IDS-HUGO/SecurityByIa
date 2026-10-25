@@ -21,6 +21,19 @@ export default function App() {
     return ['overview', 'findings', 'benchmark', 'tools', 'report', 'proxy', 'executive', 'history', 'controls', 'credentials'].includes(hash) ? hash : 'overview';
   });
 
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem('theme') || 'dark';
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const handleToggleTheme = () => {
+    setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
+  };
+
   const [currentAnalysis, setCurrentAnalysis] = useState(null);
   const [isScanning, setIsScanning] = useState(false);
   const [recentAnalyses, setRecentAnalyses] = useState([]);
@@ -217,7 +230,7 @@ export default function App() {
   const findings = currentAnalysis?.findings || [];
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
+    <div className="app-layout" style={{ display: 'flex', minHeight: '100vh' }}>
       <Sidebar
         activeTab={activeTab}
         onTabChange={handleTabChange}
@@ -228,6 +241,8 @@ export default function App() {
         <Topbar
           activeTab={activeTab}
           onRefresh={handleRefresh}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
         />
 
         {/* Global Scan Card (available on overview and findings tabs) */}
@@ -302,11 +317,7 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'proxy' && (
-          <ProxyTab />
-        )}
-
-        {activeTab === 'credentials' && (
+        {(activeTab === 'credentials' || activeTab === 'proxy') && (
           <CredentialsTab />
         )}
       </main>

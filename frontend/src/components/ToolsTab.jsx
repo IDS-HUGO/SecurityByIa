@@ -54,11 +54,11 @@ export default function ToolsTab() {
   const languages = ['all', 'python', 'javascript', 'go', 'java', 'terraform', 'dockerfile', 'github-actions'];
 
   return (
-    <div className="tab-pane tools-tab">
+    <div className="tab-pane active tools-tab">
       <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.25rem' }}>
-            <h2 style={{ margin: 0 }}>Benchmark por Herramienta (F13)</h2>
+            <h2 style={{ margin: 0 }}>Catálogo & Benchmark de Herramientas</h2>
             <span className="badge" style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.3)', padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600 }}>
               📊 Evaluación Independiente
             </span>
