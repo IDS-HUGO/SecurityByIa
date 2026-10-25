@@ -82,6 +82,67 @@ export default function OverviewTab({ currentAnalysis, recentAnalyses, onLoadAna
         </div>
       </section>
 
+      {/* Panel de Cobertura del Análisis (F14) */}
+      {currentAnalysis && currentAnalysis.coverage && (
+        <section className="card" style={{ marginTop: '20px', padding: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <div>
+              <p className="eyebrow" style={{ margin: 0 }}>PRINCIPIO DE COBERTURA DECLARADA (F14)</p>
+              <h3 style={{ margin: '4px 0 0', fontSize: '16px' }}>Cobertura Políglota del Análisis</h3>
+            </div>
+            <span
+              className="badge"
+              style={{
+                background: currentAnalysis.coverage.status === 'completed' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(234, 179, 8, 0.15)',
+                color: currentAnalysis.coverage.status === 'completed' ? '#22c55e' : '#eab308',
+                border: currentAnalysis.coverage.status === 'completed' ? '1px solid rgba(34, 197, 94, 0.4)' : '1px solid rgba(234, 179, 8, 0.4)',
+                padding: '0.3rem 0.75rem',
+                borderRadius: '4px',
+                fontWeight: 600,
+                fontSize: '0.8rem',
+              }}
+            >
+              {currentAnalysis.coverage.status === 'completed' ? '✓ Cobertura Total (Completed)' : '⚠️ Cobertura Parcial (Completed with Gaps)'}
+            </span>
+          </div>
+
+          {currentAnalysis.coverage.gaps && currentAnalysis.coverage.gaps.length > 0 && (
+            <div style={{ background: 'rgba(234, 179, 8, 0.08)', border: '1px solid rgba(234, 179, 8, 0.3)', borderRadius: '6px', padding: '12px 16px', marginBottom: '14px', fontSize: '0.85rem', color: '#fef08a' }}>
+              <strong>Lagunas de cobertura detectadas:</strong>
+              <ul style={{ margin: '6px 0 0 18px', padding: 0 }}>
+                {currentAnalysis.coverage.gaps.map((gap, i) => (
+                  <li key={i}>{gap}</li>
+                ))}
+              </ul>
+              <div style={{ marginTop: '8px', fontSize: '0.8rem', color: '#94a3b8' }}>
+                💡 <em>Por honestidad del análisis nunca se declara 'limpio' sin revisar. La revisión con IA asiste como cubierta complementaria.</em>
+              </div>
+            </div>
+          )}
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '10px' }}>
+            {(currentAnalysis.coverage.languages || []).map((lang) => (
+              <div key={lang.name} style={{ background: 'var(--surface-color, #0f172a)', border: '1px solid var(--border-color, #334155)', borderRadius: '6px', padding: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <strong style={{ textTransform: 'capitalize', color: '#f8fafc' }}>{lang.name}</strong>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted, #94a3b8)' }}>{lang.files} archivos ({Math.round(lang.bytes / 1024)} KB)</span>
+                </div>
+                <div style={{ fontSize: '0.8rem', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <div>
+                    <span style={{ color: 'var(--text-muted, #94a3b8)' }}>SAST: </span>
+                    <span style={{ color: lang.sast ? '#38bdf8' : '#ef4444', fontWeight: 600 }}>{lang.sast || 'Sin SAST dedicado'}</span>
+                  </div>
+                  <div>
+                    <span style={{ color: 'var(--text-muted, #94a3b8)' }}>SCA: </span>
+                    <span style={{ color: lang.sca ? '#22c55e' : '#94a3b8' }}>{lang.sca || 'N/A'}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Recent Analyses History Section */}
       <section className="card" style={{ marginTop: '20px' }}>
         <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

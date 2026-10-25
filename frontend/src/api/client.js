@@ -204,6 +204,61 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
+
+  // Credential Broker endpoints (Feature 12)
+  listCredentialSites: () =>
+    request('/api/credentials/sites', {
+      method: 'GET',
+    }),
+
+  registerCredentialSite: (payload) =>
+    request('/api/credentials/sites', {
+      method: 'POST',
+      body: payload,
+    }),
+
+  listCredentialApprovals: (status = '') =>
+    request(`/api/credentials/approvals${status ? `?status=${encodeURIComponent(status)}` : ''}`, {
+      method: 'GET',
+    }),
+
+  actOnCredentialApproval: (requestId, { action, reviewer, reason, granted_ttl_seconds }) =>
+    request(`/api/credentials/approvals/${encodeURIComponent(requestId)}/action`, {
+      method: 'POST',
+      body: { action, reviewer, reason, granted_ttl_seconds },
+    }),
+
+  listCredentialSessions: () =>
+    request('/api/credentials/sessions', {
+      method: 'GET',
+    }),
+
+  revokeCredentialSession: (sessionId) =>
+    request(`/api/credentials/sessions/${encodeURIComponent(sessionId)}/revoke`, {
+      method: 'POST',
+    }),
+
+  getCredentialAudit: (limit = 50) =>
+    request(`/api/credentials/audit?limit=${encodeURIComponent(limit)}`, {
+      method: 'GET',
+    }),
+
+  // Tools & Tool Benchmark endpoints (Feature 13 & 14)
+  listTools: () =>
+    request('/api/tools', {
+      method: 'GET',
+    }),
+
+  getToolBenchmarkStatus: () =>
+    request('/api/bench/tools', {
+      method: 'GET',
+    }),
+
+  runToolBenchmark: (payload = {}) =>
+    request('/api/bench/tools/run', {
+      method: 'POST',
+      body: payload,
+    }),
 };
 
 export default api;

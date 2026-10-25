@@ -61,10 +61,26 @@ pruebas, consulta la [Guía de ejecución](docs/ejecucion.md).
 - **Descarte Automático de Parches Inseguros:** Si el hallazgo persiste o se introduce una nueva alerta de seguridad, el parche se descarta automáticamente (`status: "discarded"`). Si se resuelve limpiamente sin nuevos hallazgos, queda marcado como verificado (`status: "verified"`).
 - **Protección Estricta del Repositorio:** El fixer **nunca hace push a la rama principal** (`main` o `master`).
 - **Pruebas del Proyecto en Sandbox sin Red:** Las pruebas del proyecto analizado se ejecutan únicamente con opt-in explícito en repositorios propios y dentro de un contenedor Docker aislado sin acceso a red (`docker run --network none`).
-- **Vista de Revisión del Parche en Frontend:** Visualización lado a lado (Side-by-Side) o unificada, estado de verificación, y botones *Aprobar* y *Rechazar* con motivo obligatorio.
 - **Ciclo de Vida Visible del Hallazgo:** Estados visibles en la tabla y detalle: `abierto`, `parche propuesto`, `verificado`, `descartado`, `aprobado`, `rechazado`.
 
----
+### 6. Acceso Web Delegado y Credenciales de Agentes (Feature 12)
+- **Zero LLM Exposure:** Garantía de que contraseñas, semillas TOTP y tokens de sesión jamás ingresan al prompt ni al contexto del modelo ni del agente.
+- **Bóveda Cifrada Segura:** Custodia de secretos en `EncryptedFileVault` con permisos Unix `0600` y adaptadores desacoplados para Bitwarden y 1Password CLI.
+- **Validación Estricta de Origen:** Protección contra phishing y prompt injection; si la navegación intenta desviarse a un dominio o iframe ajeno, el broker aborta de inmediato (`OriginMismatchError`).
+- **Interfaz Intuitiva de Integración:** Vista guiada paso a paso para dar de alta sitios con políticas de aprobación, bandeja de autorización humana interactiva, y control de sesiones activas con botón de revocación instantánea.
+- **Worker de Confianza:** Handshake seguro en el navegador, resolución interna de TOTP (RFC 6238) y limpieza forzada de inputs si la autenticación falla.
+
+### 7. Benchmark por Herramienta (Feature 13)
+- **Evaluación Empírica por Escáner:** Medición cuantitativa e independiente para Semgrep, Bandit, Gitleaks, TruffleHog, OSV-Scanner, Checkov, Trivy, hadolint, zizmor, Syft, ScanCode y Scorecard.
+- **Emparejamiento Riguroso:** Tolerancia de $\pm 3$ líneas o caso/CWE, normalización de alias de avisos SCA (CVE, GHSA, OSV) y cálculo honesto de métricas (FPR solo en datasets con negativos verificados).
+- **Configuración Automática (`defaults.yml`):** Clasificación empírica de herramientas como recomendadas, opcionales o desactivadas según umbrales de precisión y fallos.
+- **Pestaña Herramientas en Frontend:** Dashboard interactivo con filtros por categoría y lenguaje, tiempos medianos y celdas con evidencia JSON.
+
+### 8. Cobertura Políglota y Cobertura Declarada (Feature 14)
+- **Detección sin Ejecución (`detect_stack_v2`):** Conteo de archivos y volumen en bytes para más de 8 lenguajes (Python, JS/TS, Go, Java, Kotlin, Ruby, PHP, Rust, C#, C/C++, Dart, Elixir), lockfiles, frameworks y monorepos con múltiples subproyectos.
+- **Registro Modular de Herramientas (`ToolRegistry`):** Catálogo extensible con diagnóstico `secai doctor` y endpoint `GET /api/tools`.
+- **Principio de Cobertura Declarada:** Si un lenguaje detectado no cuenta con escáner SAST activo, el análisis finaliza en `completed_with_gaps` con bloque `coverage` detallado, alerta amigable en la interfaz y sugerencia de revisión asistida con IA.
+
 
 ## 🏗️ Arquitectura del Sistema
 

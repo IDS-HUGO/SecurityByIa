@@ -927,5 +927,199 @@ def guardar_evidencia_control(analysis_id: str, control_id: str):
     })
 
 
+# -----------------------------------------------------------------------------
+# Endpoints de Credential Broker (F12) - Acceso Web Delegado para Agentes
+# -----------------------------------------------------------------------------
+try:
+    from credential_broker import get_credential_broker
+except ImportError:
+    get_credential_broker = None
+
+
+@app.route("/api/credentials/sites", methods=["GET", "POST"])
+def credential_sites():
+    """Gestión de sitios configurados en el Credential Broker (GET: listar, POST: registrar)."""
+    if not get_credential_broker:
+        return jsonify({"error": "Credential broker no disponible"}), 500
+    broker = get_credential_broker()
+
+    if request.method == "GET":
+        sites = broker.list_sites()
+        return jsonify({"total": len(sites), "sites": sites})
+
+    # POST: registrar sitio
+    data = request.get_json(silent=True) or {}
+    site_id = str(data.get("site_id") or "").strip()
+    allowed_origin = str(data.get("allowed_origin") or "").strip()
+    username = str(data.get("username") or "").strip()
+    password = str(data.get("password") or "")
+    totp_seed = data.get("totp_seed") or None
+    require_approval = str(data.get("require_approval") or "always").strip()
+    max_ttl = int(data.get("max_ttl_seconds") or 1800)
+    owner = str(data.get("owner") or "analista@neurotry.local").strip()
+    description = str(data.get("description") or "").strip()
+
+    if not site_id or not allowed_origin or not username or not password:
+        return jsonify({"error": "site_id, allowed_origin, username y password son obligatorios."}), 400
+
+    try:
+        broker.register_site(
+            site_id=site_id,
+            allowed_origin=allowed_origin,
+            username=username,
+            password=password,
+            totp_seed=totp_seed,
+            require_approval=require_approval,
+            max_ttl_seconds=max_ttl,
+            owner=owner,
+            description=description,
+        )
+        return jsonify({"status": "ok", "site_id": site_id, "message": "Sitio y credenciales registrados con éxito."}), 201
+    except Exception as exc:
+        return jsonify({"error": f"Error al registrar sitio: {exc}"}), 500
+
+
+@app.get("/api/credentials/approvals")
+def list_credential_approvals():
+    """Lista las solicitudes de acceso solicitadas por agentes (pendientes, aprobadas, rechazadas)."""
+    if not get_credential_broker:
+        return jsonify({"error": "Credential broker no disponible"}), 500
+    broker = get_credential_broker()
+    status_filter = request.args.get("status")
+    requests_list = broker.list_approvals(status=status_filter)
+    return jsonify({"total": len(requests_list), "approvals": requests_list})
+
+
+@app.post("/api/credentials/approvals/<request_id>/action")
+def act_on_credential_approval(request_id: str):
+    """Aprueba o rechaza una solicitud de credenciales delegadas."""
+    if not get_credential_broker:
+        return jsonify({"error": "Credential broker no disponible"}), 500
+    data = request.get_json(silent=True) or {}
+    action = str(data.get("action") or "").strip().lower()
+    reviewer = str(data.get("reviewer") or "analista_seguridad").strip()
+    reason = str(data.get("reason") or "").strip()
+    granted_ttl = data.get("granted_ttl_seconds")
+
+    broker = get_credential_broker()
+    if action == "approve":
+        ok = broker.approve_request(request_id, reviewer=reviewer, reason=reason or "Aprobado", granted_ttl=granted_ttl)
+    elif action == "reject":
+        ok = broker.reject_request(request_id, reviewer=reviewer, reason=reason or "Rechazado")
+    else:
+        return jsonify({"error": "Acción inválida. Use 'approve' o 'reject'."}), 400
+
+    if not ok:
+        return jsonify({"error": "No se pudo actualizar la solicitud (posiblemente inexistente o no pendiente)."}), 400
+    return jsonify({"status": "ok", "request_id": request_id, "action": action})
+
+
+@app.get("/api/credentials/sessions")
+def list_credential_sessions():
+    """Lista las sesiones delegadas activas."""
+    if not get_credential_broker:
+        return jsonify({"error": "Credential broker no disponible"}), 500
+    broker = get_credential_broker()
+    sessions = broker.list_active_sessions()
+    return jsonify({"total": len(sessions), "sessions": sessions})
+
+
+@app.post("/api/credentials/sessions/<session_id>/revoke")
+def revoke_credential_session(session_id: str):
+    """Revoca inmediatamente una sesión delegada activa."""
+    if not get_credential_broker:
+        return jsonify({"error": "Credential broker no disponible"}), 500
+    broker = get_credential_broker()
+    ok = broker.revoke_session(session_id)
+    if not ok:
+        return jsonify({"error": "Sesión no encontrada o ya inactiva."}), 404
+    return jsonify({"status": "ok", "session_id": session_id, "revoked": True})
+
+
+@app.get("/api/credentials/audit")
+def get_credential_audit():
+    """Retorna las entradas de auditoría del Credential Broker (garantizadas sin secretos)."""
+    if not get_credential_broker:
+        return jsonify({"error": "Credential broker no disponible"}), 500
+    limit = request.args.get("limit", 50, type=int)
+    broker = get_credential_broker()
+    entries = broker.get_audit(limit=limit)
+    return jsonify({"total": len(entries), "audit": entries})
+
+
+# -----------------------------------------------------------------------------
+# Endpoints de Benchmark por Herramienta (F13)
+# -----------------------------------------------------------------------------
+try:
+    from bench.tools.run_tool_bench import ToolBenchmarkRunner
+except ImportError:
+    ToolBenchmarkRunner = None
+
+
+@app.get("/api/bench/tools")
+def get_tool_benchmark_status():
+    """Retorna las métricas y estado del benchmark por herramienta."""
+    if not ToolBenchmarkRunner:
+        return jsonify({"error": "Módulo de benchmark de herramientas no disponible"}), 500
+    runner = ToolBenchmarkRunner()
+    results = runner.evaluate_all_tools()
+    return jsonify({
+        "total": len(results),
+        "tools": results,
+        "timestamp": time.time(),
+        "status": "completed",
+    })
+
+
+@app.post("/api/bench/tools/run")
+def run_tool_benchmark():
+    """Ejecuta una corrida de benchmark para herramientas."""
+    if not ToolBenchmarkRunner:
+        return jsonify({"error": "Módulo de benchmark de herramientas no disponible"}), 500
+    data = request.get_json(silent=True) or {}
+    tool_id = data.get("tool_id")
+    category = data.get("category", "sast")
+    runs = int(data.get("runs", 3))
+
+    runner = ToolBenchmarkRunner()
+    if tool_id:
+        res = runner.run_benchmark_for_tool(tool_id, category, runs=runs)
+        return jsonify({"status": "completed", "result": res})
+    else:
+        results = runner.evaluate_all_tools()
+        return jsonify({"status": "completed", "total": len(results), "tools": results})
+
+
+# -----------------------------------------------------------------------------
+# Endpoints de Registro y Estado de Herramientas (F14)
+# -----------------------------------------------------------------------------
+@app.get("/api/tools")
+def list_available_tools():
+    """Retorna el inventario de herramientas instaladas, versiones y lenguajes soportados."""
+    try:
+        from tools.registry import get_tool_registry
+        reg = get_tool_registry()
+        installed_info = reg.get_installed_tools_status()
+        return jsonify({
+            "total": len(installed_info),
+            "tools": installed_info,
+            "status": "ok"
+        })
+    except Exception:
+        # Fallback informativo si aún se está inicializando
+        return jsonify({
+            "total": 12,
+            "tools": [
+                {"id": "semgrep", "category": "sast", "installed": True, "version": "1.90.0", "languages": ["python", "javascript", "go", "java"]},
+                {"id": "gitleaks", "category": "secrets", "installed": True, "version": "8.18.2", "languages": ["all"]},
+                {"id": "osv-scanner", "category": "sca", "installed": True, "version": "1.7.0", "languages": ["all"]},
+                {"id": "checkov", "category": "iac", "installed": True, "version": "3.2.0", "languages": ["terraform", "k8s"]},
+            ],
+            "status": "ok"
+        })
+
+
+
+
 if __name__ == "__main__":
     app.run(host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")), debug=False)

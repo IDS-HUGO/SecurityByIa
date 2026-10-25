@@ -1,0 +1,37 @@
+# Verdad de referencia para benchmark de dependencias SCA (F13)
+# Incluye paquetes, versiones y alias normalizados de avisos (CVE, GHSA, OSV)
+
+version: "1.0"
+category: sca
+
+known_vulnerabilities:
+  - id: sca-01
+    package: "requests"
+    version: "2.19.1"
+    ecosystem: "pypi"
+    aliases: ["CVE-2018-18074", "GHSA-wqvq-5x8w-865p", "PYSEC-2018-28"]
+  - id: sca-02
+    package: "urllib3"
+    version: "1.24.1"
+    ecosystem: "pypi"
+    aliases: ["CVE-2019-11324", "GHSA-m5pq-52wj-vjh2"]
+  - id: sca-03
+    package: "lodash"
+    version: "4.17.15"
+    ecosystem: "npm"
+    aliases: ["CVE-2020-8203", "GHSA-p6mc-m468-83gw"]
+  - id: sca-04
+    package: "axios"
+    version: "0.21.0"
+    ecosystem: "npm"
+    aliases: ["CVE-2020-28168", "GHSA-42xw-2xvc-cxjx"]
+  - id: sca-05
+    package: "golang.org/x/crypto"
+    version: "v0.0.0-20201221181555-eec23a3978ad"
+    ecosystem: "go"
+    aliases: ["CVE-2021-43565", "GO-2022-0493"]
+  - id: sca-06
+    package: "org.yaml:snakeyaml"
+    version: "1.30"
+    ecosystem: "maven"
+    aliases: ["CVE-2022-25857", "GHSA-wh98-p28r-vrc9"]

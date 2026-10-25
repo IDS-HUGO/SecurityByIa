@@ -1,0 +1,48 @@
+version: '1.0'
+generated_from_benchmark: true
+timestamp: 1792903519.8674355
+defaults:
+  sast:
+    recomendada:
+    - semgrep
+    - bandit
+    opcional: []
+    desactivada: []
+  secrets:
+    recomendada:
+    - gitleaks
+    - trufflehog
+    opcional: []
+    desactivada: []
+  sca:
+    recomendada:
+    - osv-scanner
+    opcional: []
+    desactivada: []
+  iac:
+    recomendada:
+    - checkov
+    opcional: []
+    desactivada:
+    - trivy
+  ci:
+    recomendada: []
+    opcional: []
+    desactivada:
+    - hadolint
+    - zizmor
+  licencias:
+    recomendada:
+    - scancode
+    opcional: []
+    desactivada: []
+  sbom:
+    recomendada:
+    - syft
+    opcional: []
+    desactivada: []
+  reputacion:
+    recomendada: []
+    opcional:
+    - scorecard
+    desactivada: []

@@ -859,14 +859,26 @@ def analyze_directory(
             "subestimar el riesgo; reintentá con red disponible."
         )
 
+    # Cálculo de Cobertura Declarada (F14)
+    from tools.coverage import build_coverage_block
+    tools_map = {"semgrep": semgrep_status, "gitleaks": gitleaks_status, **(tool_report.get("tools") or {})}
+    coverage_block = build_coverage_block(
+        stack=tool_report.get("stack") or {},
+        tools_status=tools_map,
+        findings=findings,
+    )
+
+    final_status = "completed_with_gaps" if coverage_block.get("status") == "completed_with_gaps" else "completed"
+
     return {
-        "status": "completed",
+        "status": final_status,
         "stage": "completed",
         "progress": 100,
-        "message": "Analysis complete",
+        "message": "Analysis complete" if final_status == "completed" else "Analysis complete with coverage gaps",
         "repository": {"url": url, "name": repo_name},
         "summary": {"total": len(findings), **summary},
         "findings": findings,
+        "coverage": coverage_block,
         "controls_review": controls_review,
         **({"warnings": warnings} if warnings else {}),
         "markdown_report": _markdown(findings, url),

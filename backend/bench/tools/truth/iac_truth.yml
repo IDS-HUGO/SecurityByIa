@@ -1,0 +1,27 @@
+# Verdad de referencia para benchmark de IaC (F13)
+
+version: "1.0"
+category: iac
+
+findings:
+  - id: iac-01
+    file: "terraform/s3.tf"
+    line: 12
+    rule_id: "CKV_AWS_18"
+    description: "S3 Bucket sin acceso público bloqueado"
+    cwe: "CWE-284"
+    is_insecure: true
+  - id: iac-02
+    file: "terraform/security_group.tf"
+    line: 25
+    rule_id: "CKV_AWS_24"
+    description: "Security Group con SSH (puerto 22) abierto a 0.0.0.0/0"
+    cwe: "CWE-284"
+    is_insecure: true
+  - id: iac-03
+    file: "k8s/deployment.yaml"
+    line: 18
+    rule_id: "CKV_K8S_16"
+    description: "Contenedor ejecutándose con privilegios de root"
+    cwe: "CWE-250"
+    is_insecure: true

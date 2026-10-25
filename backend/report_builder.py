@@ -120,17 +120,31 @@ def build_sarif_report(result: Dict[str, Any]) -> Dict[str, Any]:
         })
 
     repository = _repository_meta(result)
+    coverage = result.get("coverage") or {}
+    notifications = []
+    for gap in coverage.get("gaps") or []:
+        notifications.append({
+            "descriptor": {"id": "coverage-gap"},
+            "message": {"text": f"Laguna de cobertura detectada: {gap}"},
+            "level": "warning"
+        })
+
     return {
         "$schema": SARIF_SCHEMA,
         "version": SARIF_VERSION,
         "runs": [{
             "tool": {"driver": {"name": TOOL_NAME, "rules": list(rules.values())}},
-            "invocations": [{"executionSuccessful": True, "endTimeUtc": _now_iso()}],
+            "invocations": [{
+                "executionSuccessful": True,
+                "endTimeUtc": _now_iso(),
+                **({"toolExecutionNotifications": notifications} if notifications else {})
+            }],
             "properties": {
                 "analysisId": result.get("analysis_id"),
                 "repository": {k: v for k, v in repository.items() if k != "missing_fields"},
                 "summary": severity_counts(result),
                 "remediation": remediation_counts(result),
+                "coverage": coverage,
             },
             "results": sarif_results,
         }],
@@ -145,6 +159,7 @@ def build_markdown_report(result: Dict[str, Any]) -> str:
     remediation = remediation_counts(result)
     writer = writer_agent.build_writer_report(result)
     guide = writer["best_practices_guide"]
+    coverage = result.get("coverage") or {}
 
     def meta_line(label: str, value: Any) -> str:
         return f"- **{label}:** {value}" if value else f"- **{label}:** {writer_agent.GAP_PREFIX.lower()}: {label.lower()}."
@@ -160,6 +175,24 @@ def build_markdown_report(result: Dict[str, Any]) -> str:
         meta_line("Fecha de análisis", generated),
         meta_line("ID de análisis", result.get("analysis_id")),
         f"- **Estado:** {result.get('status') or writer_agent.GAP_PREFIX.lower()}: estado.",
+        "",
+        "## Cobertura del análisis (F14)",
+        "",
+        f"- **Estado de cobertura:** `{coverage.get('status', 'completed')}`",
+    ]
+
+    if coverage.get("languages"):
+        lines.append("- **Lenguajes detectados:**")
+        for lang in coverage["languages"]:
+            lines.append(f"  - `{lang.get('name')}`: {lang.get('files')} archivos (SAST: {lang.get('sast') or 'ninguno'}, SCA: {lang.get('sca') or 'ninguno'})")
+
+    if coverage.get("gaps"):
+        lines.append("- **Lagunas de cobertura declaradas:**")
+        for gap in coverage["gaps"]:
+            lines.append(f"  - ⚠️ {gap}")
+        lines.append("  *(Principio de cobertura: nunca se reporta 'limpio' sin cobertura completa; la revisión con IA asiste como cubierta parcial)*")
+
+    lines += [
         "",
         "## Resumen por severidad",
         "",

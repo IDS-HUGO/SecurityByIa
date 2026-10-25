@@ -1096,6 +1096,175 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/credentials/sites:
+    get:
+      summary: Listar sitios configurados en el Credential Broker (F12)
+      description: Retorna la lista de sitios, orígenes y políticas de credenciales (sin contraseñas).
+      operationId: listCredentialSites
+      responses:
+        '200':
+          description: Lista de sitios obtenida exitosamente
+    post:
+      summary: Registrar nuevo sitio y credencial segura en bóveda (F12)
+      description: Guarda usuario, contraseña cifrada y política de acceso en el broker.
+      operationId: registerCredentialSite
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - site_id
+                - allowed_origin
+                - username
+                - password
+              properties:
+                site_id:
+                  type: string
+                allowed_origin:
+                  type: string
+                username:
+                  type: string
+                password:
+                  type: string
+                totp_seed:
+                  type: string
+                require_approval:
+                  type: string
+                  enum: [always, once, none]
+                max_ttl_seconds:
+                  type: integer
+      responses:
+        '201':
+          description: Sitio registrado exitosamente
+
+  /api/credentials/approvals:
+    get:
+      summary: Listar solicitudes de aprobación de credenciales (F12)
+      description: Consulta solicitudes pendientes o históricas solicitadas por agentes.
+      operationId: listCredentialApprovals
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Solicitudes obtenidas
+
+  /api/credentials/approvals/{request_id}/action:
+    post:
+      summary: Aprobar o rechazar solicitud de acceso (F12)
+      description: Registra la decisión humana de conceder o denegar acceso delegado.
+      operationId: actOnCredentialApproval
+      parameters:
+        - name: request_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - action
+              properties:
+                action:
+                  type: string
+                  enum: [approve, reject]
+                reviewer:
+                  type: string
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Acción ejecutada exitosamente
+
+  /api/credentials/sessions:
+    get:
+      summary: Listar sesiones delegadas activas (F12)
+      description: Retorna las sesiones efímeras vigentes concedidas a agentes.
+      operationId: listCredentialSessions
+      responses:
+        '200':
+          description: Lista de sesiones activas
+
+  /api/credentials/sessions/{session_id}/revoke:
+    post:
+      summary: Revocar sesión delegada inmediatamente (F12)
+      description: Invalida el token opaco y elimina la sesión en disco al instante.
+      operationId: revokeCredentialSession
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Sesión revocada exitosamente
+
+  /api/credentials/audit:
+    get:
+      summary: Auditoría del Credential Broker (F12)
+      description: Bitácora inmutable de eventos de acceso sin secretos.
+      operationId: getCredentialAudit
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Registros de auditoría obtenidos
+
+  /api/bench/tools:
+    get:
+      summary: Estado del Benchmark por Herramienta (F13)
+      description: Consulta las métricas independientes por escáner.
+      operationId: getToolBenchmarkStatus
+      responses:
+        '200':
+          description: Métricas obtenidas exitosamente
+
+  /api/bench/tools/run:
+    post:
+      summary: Ejecutar corrida de benchmark de herramientas (F13)
+      description: Ejecuta benchmark individual o global y genera defaults.yml.
+      operationId: runToolBenchmark
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tool_id:
+                  type: string
+                category:
+                  type: string
+                runs:
+                  type: integer
+      responses:
+        '200':
+          description: Corrida finalizada exitosamente
+
+  /api/tools:
+    get:
+      summary: Catálogo y estado de herramientas instaladas (F14)
+      description: Retorna el inventario de escáneres, disponibilidad y versión para secai doctor.
+      operationId: listTools
+      responses:
+        '200':
+          description: Catálogo de herramientas obtenido exitosamente
+
 components:
   schemas:
     ErrorResponse:

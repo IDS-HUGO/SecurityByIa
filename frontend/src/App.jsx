@@ -12,11 +12,13 @@ import ProxyTab from './components/ProxyTab';
 import ExecutiveTab from './components/ExecutiveTab';
 import HistoryTab from './components/HistoryTab';
 import ControlsTab from './components/ControlsTab';
+import CredentialsTab from './components/CredentialsTab';
+import ToolsTab from './components/ToolsTab';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState(() => {
     const hash = window.location.hash.replace('#', '');
-    return ['overview', 'findings', 'benchmark', 'report', 'proxy', 'executive', 'history', 'controls'].includes(hash) ? hash : 'overview';
+    return ['overview', 'findings', 'benchmark', 'tools', 'report', 'proxy', 'executive', 'history', 'controls', 'credentials'].includes(hash) ? hash : 'overview';
   });
 
   const [currentAnalysis, setCurrentAnalysis] = useState(null);
@@ -271,6 +273,10 @@ export default function App() {
           />
         )}
 
+        {activeTab === 'tools' && (
+          <ToolsTab />
+        )}
+
         {activeTab === 'report' && (
           <ReportTab
             currentAnalysis={currentAnalysis}
@@ -298,6 +304,10 @@ export default function App() {
 
         {activeTab === 'proxy' && (
           <ProxyTab />
+        )}
+
+        {activeTab === 'credentials' && (
+          <CredentialsTab />
         )}
       </main>
     </div>

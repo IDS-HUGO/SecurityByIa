@@ -68,6 +68,10 @@ python -m pytest backend/tests/ -v # suite completa de backend, contrato OpenAPI
 - `backend/tests/test_controls.py` — revisión por control (inventario v1.0): 35 specs validadas, detección de SDK de LLM (gating C10–C13), evidencia determinista con tope de tokens, verificación/descarte de líneas citadas del agente, cobertura RBAC/IDOR por endpoint, cruce con scanners, endpoints de API y estructura de las reglas Semgrep.
 - `backend/tests/test_proxy.py` — proxy de secretos (F8): acceso permitido con inyección del secreto, denegados, lista blanca, fail-closed con proxy caído, redacción verificada con Gitleaks y rotación de tokens.
 - `backend/tests/test_verificadores.py` — verificación en vivo y evidencia (F11): modo HTTP (CORS, cookies, headers, errores, rate limit 429, TLS < 1.2), modo nube (describe/get de cifrado, S3 público, ciclo de vida, BD pública, TLS balanceador, CloudTrail, respaldos), autorización obligatoria, honestidad (requiere evidencia), bitácora y endpoints.
+- `backend/tests/test_credential_broker.py` — acceso delegado y credenciales sin exposición (F12): 9 pruebas con valor señuelo CANARY (sin fugas en prompts, respuestas, logs, DOM ni capturas; bloqueo ante origen ajeno o iframes; bloqueo sin aprobación; limpieza ante fallos; almacenamiento 0600; ausencia de herramientas que revelen contraseñas).
+- `backend/tests/test_credentials_api.py` — endpoints de API para sitios, credenciales en bóveda, solicitudes de aprobación humana y sesiones delegadas.
+- `backend/tests/test_tool_benchmark.py` — benchmark por herramienta (F13): coincidencia estandarizada por categoría (SAST/IaC ±3 líneas o caso/CWE, secretos sembrados, alias SCA), cálculo riguroso de TP, FP, FN, TN, recall, precisión, FPR y F1, y generación de defaults.yml.
+- `backend/tests/test_coverage_and_languages.py` — cobertura declarada y stack v2 (F14): detección de 8+ lenguajes sin ejecución de código, estadísticas de archivos/bytes, detección de monorepos, emisión de completed_with_gaps ante lenguajes sin soporte (Elixir) con sugerencia de revisión IA, y catálogo de herramientas para secai doctor.
 
 ---
 
@@ -234,6 +238,46 @@ python -m pytest backend/tests/ -v # suite completa de backend, contrato OpenAPI
   la vista imprimible de una página (repo+SHA+fecha, KPIs de severidad,
   remediación, top hallazgos con explicación, guía y datos faltantes).
 - Documentación operativa en `docs/`: `analizar.md`, `clasificacion-severidad.md`,
+  `agregar-herramienta.md`, `benchmark.md`, `controles.md`, `credenciales-agentes.md`,
+  `resultados-herramientas.md`, `preguntas-abiertas.md`.
+
+### `credential_broker/` — acceso delegado y credenciales sin exposición (F12)
+
+- **Aislamiento absoluto (Zero LLM Exposure)**: agentes y modelos jamás reciben contraseñas,
+  tokens de sesión ni semillas TOTP en su contexto; solo manejan identificadores y tokens opacos efímeros.
+- **Bóveda cifrada y adaptadores**: `EncryptedFileVault` con almacenamiento protegido por permisos `0600`
+  y cifrado simétrico, `FakeVault` para pruebas, y adaptadores preparados para Bitwarden y 1Password CLI.
+- **Políticas y verificación estricta de origen**: `allowed_origin` verificado antes de cada handshake;
+  bloqueo de redirecciones no autorizadas (`OriginMismatchError`) e iframes ajenos (`CrossDomainIframeError`).
+- **Aprobación humana en dos clics**: bandeja interactiva en la interfaz web para que el analista apruebe
+  o deniegue solicitudes con motivo registrado y duración acotada (TTL).
+- **Worker de confianza**: inyecta credenciales en el navegador, genera TOTP internamente (RFC 6238),
+  limpia campos del DOM ante fallos (`fields_cleared`) y purga secretos en cualquier volcado del DOM.
+- **Bitácora inmutable y revocación**: registro en `storage/credentials/broker_audit.jsonl` sin secretos
+  y botón de revocación inmediata.
+
+### `bench/tools/` — benchmark por herramienta (F13)
+
+- **Evaluación empírica independiente**: catálogo en `datasets.yml` con commit fijo, licencia verificada y
+  verdades de referencia en `truth/*.yml` (sin sobreajuste ni datos inventados).
+- **Emparejadores rigurosos (`matchers.py`)**: coincidencia de SAST/IaC ($\pm 3$ líneas o caso/CWE), secretos
+  sembrados, y normalización de alias para avisos SCA (CVE, GHSA, OSV).
+- **Métricas transparentes**: cálculo de recall, precisión, FPR (solo donde existen casos seguros), F1,
+  tiempo mediano de 3 corridas, TP únicos y solapamiento; Scorecard etiquetada honestamente como no comparable.
+- **Regla de decisión automática**: genera `backend/tools/defaults.yml` clasificando herramientas como
+  recomendadas ($\ge 0.70$ prec / $\ge 0.50$ recall), opcionales ($0.40 - 0.70$) o desactivadas ($< 0.40$).
+- **Pestaña Herramientas en el frontend**: vista interactiva con filtros, celdas de evidencia JSON y estado.
+
+### `tools/` + `detect_stack_v2` — cobertura políglota y cobertura declarada (F14)
+
+- **Detección sin ejecución (`detect_stack_v2`)**: conteo de archivos y bytes para 8+ lenguajes (Python,
+  JS/TS, Go, Java, Kotlin, Ruby, PHP, Rust, C#, C/C++, Dart, Elixir), exclusión de vendorizados, lockfiles,
+  frameworks y monorepos con múltiples subproyectos.
+- **Registro modular (`ToolRegistry`)**: catálogo extensible que reemplaza condicionales fijos y expone
+  `secai doctor` (CLI) y `GET /api/tools` con disponibilidad y comandos de instalación.
+- **Principio de cobertura declarada**: si un lenguaje detectado carece de SAST (como Elixir), el análisis
+  termina en `completed_with_gaps` con bloque `coverage` detallado, alerta visible en el dashboard y
+  sección de lagunas en los reportes Markdown y SARIF, ofreciendo la revisión con IA como respaldo complementario.
   `agregar-herramienta.md`, `benchmark.md`, `controles.md` (índice en `docs/README.md`).
 
 ### `controls/` + `rules/semgrep/` — revisión por control con IA (inventario v1.0)

@@ -1,0 +1,65 @@
+# Catálogo de datasets de referencia para el benchmark por herramienta (F13)
+# Cada dataset cuenta con commit fijo, categoría, verdad de referencia y licencia verificada.
+
+version: "1.0"
+
+datasets:
+  benchmarkpython:
+    id: benchmarkpython
+    category: sast
+    languages: ["python"]
+    git_url: "https://github.com/OWASP-Benchmark/BenchmarkPython.git"
+    commit: "2f31a1b0289d0c6498cfc8d4e9c70a0cfb2e66d4"
+    truth_type: "expectedresults_csv"
+    truth_file: "expectedresults-0.1.csv"
+    license: "GPL-2.0"
+    safe_cases_present: true
+    notes: "Dataset estándar de OWASP para SAST Python con casos vulnerables y casos seguros etiquetados."
+
+  juiceshop:
+    id: juiceshop
+    category: sast
+    languages: ["javascript", "typescript"]
+    git_url: "https://github.com/juice-shop/juice-shop.git"
+    commit: "v16.0.0"
+    truth_type: "inline_code_snippet"
+    truth_file: "vulnerabilities.json"
+    license: "MIT"
+    safe_cases_present: false
+    notes: "Aplicación deliberadamente vulnerable en Node.js/TypeScript. Se mide Recall (no FPR)."
+
+  leaky_repo:
+    id: leaky_repo
+    category: secrets
+    languages: ["all"]
+    git_url: "local_or_synthetic"
+    commit: "v1.0-synthetic"
+    truth_type: "seeded_secrets_list"
+    truth_file: "truth/secrets_truth.yml"
+    license: "Apache-2.0"
+    safe_cases_present: true
+    notes: "Repo sembrado con 25 secretos válidos de diversas estructuras (AWS, JWT, GCP, Slack, PrivateKey) y negativos (UUIDs, hashes, base64)."
+
+  sca_fixtures_polyglot:
+    id: sca_fixtures_polyglot
+    category: sca
+    languages: ["python", "javascript", "go", "java", "ruby", "php"]
+    git_url: "local_or_synthetic"
+    commit: "v1.0-sca"
+    truth_type: "advisory_aliases"
+    truth_file: "truth/sca_truth.yml"
+    license: "Apache-2.0"
+    safe_cases_present: false
+    notes: "Conjunto de manifiestos y lockfiles con vulnerabilidades conocidas y alias normalizados (CVE, GHSA, OSV)."
+
+  iac_goat_fixtures:
+    id: iac_goat_fixtures
+    category: iac
+    languages: ["terraform", "cloudformation", "kubernetes"]
+    git_url: "local_or_synthetic"
+    commit: "v1.0-iac"
+    truth_type: "insecure_configs"
+    truth_file: "truth/iac_truth.yml"
+    license: "Apache-2.0"
+    safe_cases_present: true
+    notes: "Fixtures de infraestructura como código con configuraciones inseguras y seguras."
